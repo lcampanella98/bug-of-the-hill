@@ -12,12 +12,12 @@ o.Player = function (name, ws) {
         this.x = x;
         this.y = y;
         this.a = angle;
-        this.angularSpeed = 2;
+        this.angularSpeed = 2.0;
         this.celeb = celeb;
         this.width = celeb.width;
         this.height = celeb.height;
         this.isKing = false;
-        this.speed = 40;
+        this.speed = 200.0;
         this.netWorth = celeb.netWorth;
         this.input = {"l":false,"r":false,"u":false,"d":false,"s":false};
         this.timeUntilNextFire = 0;
@@ -29,7 +29,7 @@ o.Player = function (name, ws) {
         var l = ip.l, r = ip.r, u = ip.u, d = ip.d, s = ip.s;
         // forward/back motion
         var dx = 0, dy = 0;
-        var vScale = this.speed * dt / 1000;
+        var vScale = this.speed * dt / 1000.0;
         if (!(u && d) && !this.isKing) {
             if (u) {
                 dx = vScale * Math.cos(this.a);
@@ -39,10 +39,11 @@ o.Player = function (name, ws) {
                 dy = - vScale * Math.sin(this.a);
             }
         }
+        //console.log('dx: ' + dx + ', dy: ' + dy);
         var oldX = this.x, oldY = this.y;
         this.x += dx;
         this.y += dy;
-        if (!this.gameWorld.playerCanMoveTo(player)) {
+        if (!this.gameWorld.playerCanMoveTo(this)) {
             this.x = oldX;
             this.y = oldY;
         }
@@ -72,8 +73,8 @@ o.Player = function (name, ws) {
         return [
             [this.x + hWidth, this.y + hHeight],
             [this.x - hWidth, this.y + hHeight],
-            [this.x + hWidth, this.y - hHeight],
-            [this.x - hWidth, this.y - hHeight]
+            [this.x - hWidth, this.y - hHeight],
+            [this.x + hWidth, this.y - hHeight]
         ];
     };
 
@@ -94,15 +95,15 @@ o.Projectile = function (x, y, angle, delDist, maxDist, player, drawProps) {
     this.player = player;
 
     this.update = function (dt) {
-        var dScaled = this.del * dt / 1000;
+        var dScaled = this.del * dt / 1000.0;
         this.distTrav += dScaled;
         if (this.distTrav >= this.maxDist) {
             this.finished = true;
             return;
         }
 
-        var dx = dScaled * Math.cos(a);
-        var dy = dScaled * Math.sin(a);
+        var dx = dScaled * Math.cos(this.a);
+        var dy = dScaled * Math.sin(this.a);
         this.x += dx;
         this.y += dy;
     }
@@ -138,14 +139,21 @@ o.Hill = function (x, y, newKingWithinRadius, playerWithinHillRadius, drawProps)
 };
 
 o.Turret = function (hillX, hillY, radius, isFront, drawProps) {
-    this.angle = 0;
-    this.length = gameObjectHandler.turret.width;
-    this.width = gameObjectHandler.turret.height;
+    this.angle = isFront ? 0 : Math.PI;
+    this.length = gameObjectHandler.turret.height;
+    this.width = gameObjectHandler.turret.width;
     this.hillX = hillX;
     this.hillY = hillY;
-    this.x = hillX + (isFront ? (radius + this.length/ 2) : -(radius + this.length / 2));
+    var offset = radius + this.length / 2;
+    if (!isFront) offset = -offset;
+    this.x = hillX + offset;
     this.y = hillY;
+    this.drawProps = drawProps;
+    console.log('front: ' + isFront);
+    console.log('x: ' + this.x);
+    console.log('y: ' + this.y);
     this.newAngle = function (angle) {
+        console.log('new angle');
         this.angle = isFront ? angle : angle + Math.PI;
         var dx = this.x - this.hillX, dy = this.y - this.hillY;
         var cos = Math.cos(angle), sin = Math.sin(angle);

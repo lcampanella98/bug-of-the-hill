@@ -15,6 +15,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
             p = players[i];
             if (p.name === name) {
                 p.input = input;
+                //console.log(input);
             }
         }
     };
@@ -26,16 +27,10 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     this.projectileList = [];
     this.king = null;
     this.hitTax = 10; // update this value
-    this.worldWidth = 10000;
-    this.worldHeight = 10000;
+    this.worldWidth = 1000;
+    this.worldHeight = 1000;
     this.playersList = players;
     this.dataObject = null;
-
-    for (var i = 0; i < this.playersList.length; i++) this.playersList[i].gameWorld = this;
-    this.hill = new Hill(this.worldWidth / 2, this.worldHeight / 2, 60, 200);
-    this.turretFront = new Turret(this.hill.x, this.hill.y, 30, true, null);
-    this.turretRear = new Turret(this.hill.x, this.hill.y, 30, true, null);
-
 
     this.getDefaultProjectileDrawProps = function () {
         return {
@@ -152,6 +147,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
             // check hill
             if (this.king === null && this.hill.isInsideHill(player)) return false;
         }
+        return true;
     };
 
     this.kingRotated = function (king) {
@@ -280,12 +276,14 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         comp.fillColor = proj.drawProps.fillColor;
         comp.strokeColor = proj.drawProps.strokeColor;
         comp.lineWidth = proj.drawProps.lineWidth;
+        return comp;
     };
 
     this.genHillComponent = function (hill) {
         var comp = new GameComponent();
         comp.x = hill.x;
         comp.y = hill.y;
+        comp.a = 0;
         comp.isRect = false;
         comp.isCircle = true;
         comp.isText = false;
@@ -294,6 +292,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         comp.stroke = true;
         comp.strokeColor = hill.drawProps.strokeColor;
         comp.lineWidth = hill.drawProps.lineWidth;
+        return comp;
     };
 
     this.genTextComponent = function (x, y, font, text, color) {
@@ -312,6 +311,15 @@ var world = module.exports = function (game, players, gameTimeLimit) {
 
     this.gameOver = function () {
 
+    };
+
+    for (var i = 0; i < this.playersList.length; i++) {
+        this.playersList[i].gameWorld = this;
+        this.initPlayer(this.playersList[i]);
     }
+
+    this.hill = new Hill(this.worldWidth / 2, this.worldHeight / 2, 60, 200, this.getHillDrawProps());
+    this.turretFront = new Turret(this.hill.x, this.hill.y, 30, true, null);
+    this.turretRear = new Turret(this.hill.x, this.hill.y, 30, false, null);
 };
 

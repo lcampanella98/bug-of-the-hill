@@ -28,13 +28,14 @@ game.start = function () {
     this.isStarted = true;
     this.gameTimeLimit = 2 * 60 * 1000;
     this.gameWorld = new GameWorld(this, this.playerHandler.players, this.gameTimeLimit);
-    this.broadcastMessage('start');
+    this.broadcastMessage(JSON.stringify({msg:'start'}));
+    this.updateWorld();
 };
 
 game.playerJoin = function (name, ws) {
     if (this.playerHandler.hasPlayer(name)) return false;
     this.playerHandler.addPlayer(name, ws);
-    this.broadcastToAdmins('playerjoin;' + name);
+    this.broadcastToAdmins(JSON.stringify({msg:'playerjoin', name:name}));
     return true;
 };
 
@@ -53,8 +54,8 @@ game.updateWorld = function () {
     this.gameWorld.updateWorld(this.MS_PER_FRAME);
     this.sendNextFrame();
     var elapsed = Date.now() - now;
-    //console.log(elapsed);
-    setTimeout(game.updateWorld, game.MS_PER_FRAME - elapsed);
+    var self = this;
+    setTimeout(function() {self.updateWorld();}, this.MS_PER_FRAME - elapsed);
 };
 
 game.sendNextFrame = function () {

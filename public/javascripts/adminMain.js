@@ -6,20 +6,18 @@ $(function () {
     socket = new WebSocket(addr);
 
     socket.onopen = function () {
-        socket.send('admin');
+        socket.send(JSON.stringify({msg:'admin'}));
         console.log(socket);
         $('#btn-start').on('click', function () {
-            socket.send('start');
+            socket.send(JSON.stringify({msg:'start'}));
         });
     };
 
     socket.onmessage = function (evt) {
-        var data = evt.data;
-        var parts = parseSocketMessage(data);
-        var msg = parts[0];
-        var argLen = parts.length - 1;
-        if (msg.toLowerCase() === 'playerjoin') {
-            if (argLen > 0) $('#players').append('<li>' + parts[1] + '</li>');
+        var data = JSON.parse(evt.data);
+        var msg = data.msg.toLowerCase();
+        if (msg === 'playerjoin') {
+            if (data.hasOwnProperty('name')) $('#players').append('<li>' + data.name + '</li>');
         }
     };
 

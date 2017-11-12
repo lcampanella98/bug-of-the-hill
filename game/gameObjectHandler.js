@@ -35,6 +35,9 @@ var idCounter = 0;
 var turret = new GameObject();
 turret.id = idCounter++;
 turret.file = 'otherimg/turret_sized.png';
+var turretDims = sizeOf('public/images/' + turret.file);
+turret.width = turretDims.width;
+turret.height = turretDims.height;
 allGameObjects.push(turret);
 for (var i = 0;i < celebs.length; i++) {
     var c = new GameObject();

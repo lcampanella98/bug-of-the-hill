@@ -5,11 +5,13 @@ var game = require('../game/game');
 
 router.ws('/', function (ws, req) {
     ws.on('message', function(message) {
-        if (message.toLowerCase() === 'admin') {
+        var data = JSON.parse(message);
+        var msg = data.msg.toLowerCase();
+        if (msg === 'admin') {
             game.init();
             game.adminJoin(ws);
         }
-        else if (message.toLowerCase() === 'start') {
+        else if (msg === 'start') {
             game.start();
         }
     });

@@ -15,9 +15,8 @@ $(function() {
 
         socket.onmessage = function (evt) {
             var data = JSON.parse(evt.data);
-            var msg;
+            var msg = data.msg.toLowerCase();
             if (!gameStarted) {
-                msg = data.msg.toLowerCase();
                 if (msg === 'wait') {
                     $('#msg').text('Please wait for admin to open game');
                 } else if (msg === 'taken') {
@@ -31,8 +30,9 @@ $(function() {
                     $('#msg').text('Game already started.');
                 } else if (msg === 'start') {
                     gameStarted = true;
-                    addKeyListener();
+                    addKeyListener(socket);
                     startGame();
+                    console.log('game started');
                 } else if (msg === 'gameover') {
                     // gameOver();
                 } else if (msg === 'loadobjects') {
@@ -40,7 +40,9 @@ $(function() {
                     loadObjectImages();
                 }
             } else {
-                updateGameArea(data);
+                if (data.msg === 'gameupdate') {
+                    updateGameArea(data);
+                }
             }
         };
 
@@ -95,8 +97,10 @@ function startGame() {
     myGameArea.start();
     var currentPlayerInfoDiv = $('<div style="position:absolute;top:30px;left:30px"><h4 id="info-celeb-name"></h4><br><h5>Net Worth: <span id="info-celeb-worth"></span></h5></div>');
     var kingInfoDiv = $('<div style="position:absolute;left:calc(100% - 200px);top:30px"><h4>King Celeb: <span id="info-king-name"></span></h4><br><h5>Net Worth: <span id="info-king-worth"></span></h5></div>');
+    var positionInfoDiv = $('<div style="position:absolute;left:30px;top:calc(100% - 200px);"><h4 id="pos-info"></h4></div>');
     body.append(currentPlayerInfoDiv);
     body.append(kingInfoDiv);
+    body.append(positionInfoDiv);
 }
 function getGameObject(id) {
     for (var i = 0; i < gameObjects.length; i++) {
@@ -110,7 +114,8 @@ var keyInput = {"l":false,"r":false,"u":false,"d":false,"s":false};
 function sendInput(socket) {
     var data = {
         msg: 'input',
-        input: keyInput
+        input: keyInput,
+        name: myName
     };
     socket.send(JSON.stringify(data));
 }
@@ -167,12 +172,12 @@ function isInside(point, vs) {
 }
 
 function updateGameArea(data) {
-    var allComponents = data.components;
+    var components = data.components;
     var kingData = data.kingData;
     var players = data.players;
     var you;
     for (var i = 0; i < players.length; i++) {
-        if (players[i].name === name) {you = players[i];break;}
+        if (players[i].name === myName) {you = players[i];break;}
     }
     $('#info-celeb-name').text(you.celebName);
     $('#info-celeb-worth').text('$' + you.netWorth + ' MIL');
@@ -186,30 +191,48 @@ function updateGameArea(data) {
     }
 
     var x0 = you.x, y0 = you.y;
-    var cW = myGameArea.canvas.width, cH = myGameArea.canvas.height;
-    var dist = Math.sqrt(cW * cW + cH * cH);
-    var theta = Math.atan2(cH, cW) + you.angle;
-    var dx = dist * Math.sin(theta), dy = dist * Math.cos(theta);
-    var boundingBox = [
-        [x0 + dx, y0 + dy],
-        [x0 - dx, y0 + dy],
-        [x0 + dx, y0 - dy],
-        [x0 - dx, y0 - dy]
-    ];
-    var components = [];
+    $('#pos-info').text(x0 + ',' + y0);
+    // var cW = myGameArea.canvas.width / 2, cH = myGameArea.canvas.height / 2;
+    // var dist = Math.sqrt(cW * cW + cH * cH);
+    // var theta = Math.atan2(cH, cW);
+    // var a1 = you.angle + (Math.PI / 2 - theta), a2 = you.angle - (Math.PI / 2 - theta);
+    // var dx1 = dist * Math.cos(a1), dy1 = dist * Math.sin(a1),
+    //     dx2 = dist * Math.cos(a2), dy2 = dist * Math.sin(a2);
+    // var boundingBox = [
+    //     [x0 + dx1, y0 + dy1],
+    //     [x0 + dx2, y0 + dy2],
+    //     [x0 - dx1, y0 - dy1],
+    //     [x0 - dx2, y0 - dy2]
+    // ];
     var comp;
     myGameArea.clear();
     var ctx = myGameArea.context;
-    var x, y, w, h, a, color, obj, r;
+    var x, y, w, h, a, color, obj, r, c, d;
+    // c = x0 - cW;
+    // d = y0 - cH;
+    // ctx.translate(you.x, you.y);
+    // ctx.rotate(you.angle);
+    ctx.translate(you.x, you.y);
     for (var i = 0; i < components.length; i++) {
         comp = components[i];
-        x = y0 - comp.y;
-        y = x0 - comp.x;
-        var inside = isInside([x, y], boundingBox);
-        if (!inside) continue;
-        a = 270 - comp.a;
+        //console.log('checking if ' + comp.x + ',' + comp.y + ' is inside');
+        //console.log(boundingBox);
+        // var inside = isInside([comp.x, comp.y], boundingBox);
+        // if (!inside) continue;
+        //console.log('something was inside bounds');
+        //console.log('x: ' + x);
+        x = comp.x;
+        y = comp.y;
+        a = comp.a - you.angle;
+        //console.log(comp);
+        // var xy = rotAboutPoint(comp.x - c - cW, comp.y - d - cH, a);
+        // x = xy.x + cW;
+        // y = xy.y + cH;
+        // y = myGameArea.canvas.height - y;
+        //console.log('y: ' + y);
+        //console.log('a: ' + a);
         ctx.translate(x, y);
-        ctx.rotate(a);
+        ctx.rotate(a);//Math.PI * 2 - a);
         if (comp.isObj) {
             obj = getGameObject(comp.id);
             if (obj !== null) {
@@ -249,11 +272,19 @@ function updateGameArea(data) {
             ctx.fillStyle = comp.fillStyle;
             ctx.fillText(comp.text, x, y);
         }
-        ctx.rotate(-a);
+        ctx.rotate(-a);//-(2 * Math.PI - a));
         ctx.translate(-x,-y);
     }
 
 
+}
+
+function rotAboutPoint(x, y, a) {
+    var sin = Math.sin(a), cos = Math.cos(a);
+    return {
+        x: x * cos - y * sin,
+        y: y * cos + x * sin
+    };
 }
 
 function parseSocketMessage(msg) {
