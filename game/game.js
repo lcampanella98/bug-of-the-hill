@@ -26,7 +26,8 @@ game.init = function () {
 
 game.start = function () {
     this.isStarted = true;
-    this.gameWorld = new GameWorld(this.playerHandler.players);
+    this.gameTimeLimit = 2 * 60 * 1000;
+    this.gameWorld = new GameWorld(this, this.playerHandler.players, this.gameTimeLimit);
     this.broadcastMessage('start');
 };
 
@@ -42,14 +43,37 @@ game.playerInGame = function (name) {
 };
 
 game.playerInput = function (name, input) {
-    this.gameWorld.gotInput(name, input);
+    this.gameWorld.gotPlayerInput(name, input);
+};
+
+game.MS_PER_FRAME = 1000 / 60;
+
+game.updateWorld = function () {
+    var now = Date.now();
+    this.gameWorld.updateWorld(this.MS_PER_FRAME);
+    this.sendNextFrame();
+    var elapsed = Date.now() - now;
+    //console.log(elapsed);
+    setTimeout(game.updateWorld, game.MS_PER_FRAME - elapsed);
 };
 
 game.sendNextFrame = function () {
-    var players = this.playerHandler.players;
-    for (var i = 0; i < players.length; i++) {
-        var ws = players[i].ws;
-        // send data
+    var dataObj = this.gameWorld.dataObject;
+    if (dataObj !== null) {
+        dataObj.msg = 'gameupdate';
+        var players = this.playerHandler.players, p;
+        dataObj.players = [];
+        for (var i = 0; i < players.length; i++) {
+            p = players[i];
+            if (p.isOnline())
+                dataObj.players.push({
+                    name:p.name,
+                    netWorth: p.netWorth,
+                    celebName: p.celeb.name,
+                    x: p.x, y: p.y, angle: p.a});
+        }
+        var dataStr = JSON.stringify(dataObj);
+        game.broadcastMessage(dataStr);
     }
 };
 

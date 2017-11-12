@@ -1,10 +1,14 @@
-var gameObjects = require('gameObjects');
+var gameObjects = require('./gameObjects');
 var Player = gameObjects.Player;
 var Projectile = gameObjects.Projectile;
 var Turret = gameObjects.Turret;
 var Hill = gameObjects.Hill;
 
-var world = module.exports = function (players) {
+var gameObjectHandler = require('./gameObjectHandler');
+var GameComponent = gameObjectHandler.GameComponent;
+
+
+var world = module.exports = function (game, players, gameTimeLimit) {
     this.gotPlayerInput = function (name, input) {
         var p;
         for (var i = 0; i < players.length; i++ ) {
@@ -15,12 +19,17 @@ var world = module.exports = function (players) {
         }
     };
 
+    this.game = game;
+    this.gameTimeLimit = gameTimeLimit;
+    this.timeLeft = this.gameTimeLimit;
+
     this.projectileList = [];
     this.king = null;
     this.hitTax = 10; // update this value
     this.worldWidth = 10000;
     this.worldHeight = 10000;
     this.playersList = players;
+    this.dataObject = null;
 
     for (var i = 0; i < this.playersList.length; i++) this.playersList[i].gameWorld = this;
     this.hill = new Hill(this.worldWidth / 2, this.worldHeight / 2, 60, 200);
@@ -29,11 +38,25 @@ var world = module.exports = function (players) {
 
 
     this.getDefaultProjectileDrawProps = function () {
-        return null; // change this!
+        return {
+            radius: 6,
+            lineWidth: 2,
+            fillColor: 'red',
+            strokeColor: 'black'
+        };
     };
 
     this.getKingProjectileDrawProps = function () {
-        return null; // change this!
+        var obj = this.getDefaultProjectileDrawProps();
+        obj.fillColor = 'green';
+        return obj;
+    };
+
+    this.getHillDrawProps = function () {
+        return {
+            strokeColor: 'blue',
+            lineWidth: 10
+        };
     };
 
     this.fireProjectile = function (player) {
@@ -78,8 +101,9 @@ var world = module.exports = function (players) {
             y = this.randIntBetween(pad, this.worldHeight - pad);
             angle = 0;
         }
-        var celebProps = null; // get celeb props
-        player.init(x, y, angle, celebProps);
+        var randCelebIdx = this.randInt(gameObjectHandler.celebs.length);
+        var celeb = gameObjectHandler.celebs[randCelebIdx];
+        player.init(x, y, angle, celeb);
     };
 
     this.playerHit = function (player) {
@@ -135,10 +159,18 @@ var world = module.exports = function (players) {
         this.turretRear.newAngle(king.a);
     };
 
-    this.updateWorld = function () {
-        var i;
-        var dt = 4; // change this!!
+    this.newKing = function (player) {
+        player.x = this.hill.x;
+        player.y = this.hill.y;
+        player.a = this.turretFront.angle;
+        player.isKing = true;
+        this.king = player;
+    };
 
+
+    this.updateWorld = function (dt) {
+
+        var i;
         // step 1 update projectiles
         for (i = 0; i < this.projectileList.length; i++) {
             this.projectileList[i].update();
@@ -164,11 +196,121 @@ var world = module.exports = function (players) {
         }
         // step 4 check for new king
         if (this.king === null) {
+            var minDist = 2147483647, newKing = null, dist;
             for (i = 0; i < this.playersList.length; i++) {
                 p = this.playersList[i];
-
+                dist = this.hill.distFromKingCenter(p);
+                if (dist >= 0 && dist < minDist) {
+                    minDist = dist;
+                    newKing = p;
+                }
+            }
+            if (newKing !== null) {
+                this.newKing(p);
             }
         }
+
+        this.gameTimeLimit -= dt;
+
+        if (this.gameTimeLimit <= 0) {
+            this.gameOver();
+        } else {
+            this.dataObject = this.generateDataObject();
+        }
+    };
+
+    this.generateDataObject = function () {
+        var obj = {};
+        obj.components = [];
+        obj.components.push(this.genHillComponent(this.hill));
+        obj.components.push(this.genTurretComponent(this.turretFront));
+        obj.components.push(this.genTurretComponent(this.turretRear));
+        for (var i = 0; i < this.playersList.length; i++) {
+            obj.components.push(this.genPlayerComponent(this.playersList[i]));
+        }
+        for (var i = 0; i < this.projectileList.length; i++) {
+            obj.components.push(this.genProjectileComponent(this.projectileList[i]));
+        }
+        obj.kingData = this.king === null ? null : {
+            name: this.king.name,
+            celebName: this.king.celeb.name,
+            netWorth: this.king.netWorth
+        };
+        return obj;
+    };
+
+    this.genPlayerComponent = function (player) {
+        var comp = new GameComponent();
+        comp.x = player.x;
+        comp.y = player.y;
+        comp.a = player.a;
+        comp.isObj = true;
+        comp.isRect = false;
+        comp.isCircle = false;
+        comp.isText = false;
+        comp.id = player.celeb.id;
+        return comp;
+    };
+
+    this.genTurretComponent = function (turret) {
+        var comp = new GameComponent();
+        comp.x = turret.x;
+        comp.y = turret.y;
+        comp.a = turret.angle;
+        comp.isObj = true;
+        comp.isRect = false;
+        comp.isCircle = false;
+        comp.isText = false;
+        comp.id = gameObjectHandler.turret.id;
+        return comp;
+    };
+
+    this.genProjectileComponent = function (proj) {
+        var comp = new GameComponent();
+        comp.x = proj.x;
+        comp.y = proj.y;
+        comp.a = proj.a;
+        comp.isRect = false;
+        comp.isCircle = true;
+        comp.isText = false;
+        comp.isObj = false;
+        comp.fill = true;
+        comp.stroke = true;
+        comp.radius = proj.drawProps.radius;
+        comp.fillColor = proj.drawProps.fillColor;
+        comp.strokeColor = proj.drawProps.strokeColor;
+        comp.lineWidth = proj.drawProps.lineWidth;
+    };
+
+    this.genHillComponent = function (hill) {
+        var comp = new GameComponent();
+        comp.x = hill.x;
+        comp.y = hill.y;
+        comp.isRect = false;
+        comp.isCircle = true;
+        comp.isText = false;
+        comp.isObj = false;
+        comp.fill = false;
+        comp.stroke = true;
+        comp.strokeColor = hill.drawProps.strokeColor;
+        comp.lineWidth = hill.drawProps.lineWidth;
+    };
+
+    this.genTextComponent = function (x, y, font, text, color) {
+        var comp = new GameComponent();
+        comp.x = x;
+        comp.y = y;
+        comp.font = font;
+        comp.isRect = false;
+        comp.isCircle = false;
+        comp.isText = true;
+        comp.isObj = false;
+        comp.text = text;
+        comp.fillStyle = color;
+        return comp;
+    };
+
+    this.gameOver = function () {
 
     }
 };

@@ -2,32 +2,37 @@ var express = require('express');
 var router = express.Router();
 
 var game = require('../game/game');
+var gameObjectHandler = require('../game/gameObjectHandler');
 
 router.ws('/', function (ws, req) {
     ws.on('message', function(message) {
+        var data = JSON.parse(message);
+        var msg = data.msg.toLowerCase();
         if (game.initialized && !game.isStarted) {
-            var parts = message.split(';');
-            if (parts[0].toLowerCase() === 'join') { // player join
-                var fail = function () {ws.send('taken');};
-                var success = function () {ws.send('success');};
-                if (parts.length === 0) fail();
+
+            if (msg === 'join') { // player join
+                var fail = function () {ws.send(JSON.stringify({msg:'taken'}));};
+                var success = function () {
+                    ws.send(JSON.stringify({msg:'success'}));
+                    ws.send(JSON.stringify({msg:'loadobjects', gameObjects: gameObjectHandler.allGameObjects}));
+                };
+                if (!data.hasOwnProperty('name')) fail();
                 else {
-                    var result = game.playerJoin(parts[1], ws);
+                    var result = game.playerJoin(data.name, ws);
                     if (result) success();
                     else fail();
                 }
             }
         } else if (game.initialized && game.isStarted) {
             // main game logic
-            var data = JSON.parse(message);
             if (data.hasOwnProperty('name') && game.playerInGame(data.name)) {
-                if (data.msg.toLowerCase() === 'input' && data.hasOwnProperty('input')) {
+                if (msg === 'input' && data.hasOwnProperty('input')) {
                     // process input l,r, u,d, s
                     game.playerInput(data.name, data.input);
                 }
-            } else ws.send('alreadystarted')
+            } else ws.send(JSON.stringify({msg:'alreadystarted'}));
         } else if (!game.initialized) {
-            ws.send('wait');
+            ws.send(JSON.stringify({msg:'wait'}));
         }
     })
 });

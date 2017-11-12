@@ -1,3 +1,5 @@
+var gameObjectHandler = require('./gameObjectHandler');
+
 var o = module.exports = {};
 
 o.Player = function (name, ws) {
@@ -6,19 +8,20 @@ o.Player = function (name, ws) {
     this.kingTime = 0;
     this.gameWorld = null;
 
-    this.init = function (x, y, angle, celebProps) {
+    this.init = function (x, y, angle, celeb) {
         this.x = x;
         this.y = y;
         this.a = angle;
-        this.celebProps = celebProps;
-        this.width = 40; // change to celeb image properties
-        this.height = 60; // change to celeb image properties
+        this.angularSpeed = 2;
+        this.celeb = celeb;
+        this.width = celeb.width;
+        this.height = celeb.height;
         this.isKing = false;
-        this.speed = 2.5; // what does this mean?
-        this.netWorth = 100; // change to celeb net worth
+        this.speed = 40;
+        this.netWorth = celeb.netWorth;
         this.input = {"l":false,"r":false,"u":false,"d":false,"s":false};
         this.timeUntilNextFire = 0;
-        this.fireDelay = 1000; // fire delay in ms
+        this.fireDelay = 1000;
     };
 
     this.update = function (dt) {
@@ -26,13 +29,14 @@ o.Player = function (name, ws) {
         var l = ip.l, r = ip.r, u = ip.u, d = ip.d, s = ip.s;
         // forward/back motion
         var dx = 0, dy = 0;
+        var vScale = this.speed * dt / 1000;
         if (!(u && d) && !this.isKing) {
             if (u) {
-                dx = this.speed * Math.cos(this.a);
-                dy = this.speed * Math.sin(this.a);
+                dx = vScale * Math.cos(this.a);
+                dy = vScale * Math.sin(this.a);
             } else if (d) {
-                dx = - this.speed * Math.cos(this.a);
-                dy = - this.speed * Math.sin(this.a);
+                dx = - vScale * Math.cos(this.a);
+                dy = - vScale * Math.sin(this.a);
             }
         }
         var oldX = this.x, oldY = this.y;
@@ -44,9 +48,10 @@ o.Player = function (name, ws) {
         }
         // rotation
         var da = 0;
+        var angularSpeedScaled = this.angularSpeed * dt / 1000;
         if (!(l && r)) {
-            if (l) da = 0.1; // change this value
-            else if (r) da = -0.1; // change this value
+            if (l) da = angularSpeedScaled;
+            else if (r) da = -angularSpeedScaled;
         }
         if (da !== 0 && this.isKing) gameWorld.kingRotated(this);
         this.a += da;
@@ -88,25 +93,27 @@ o.Projectile = function (x, y, angle, delDist, maxDist, player, drawProps) {
     this.drawProps = drawProps;
     this.player = player;
 
-    this.update = function () {
-        this.distTrav += this.del;
+    this.update = function (dt) {
+        var dScaled = this.del * dt / 1000;
+        this.distTrav += dScaled;
         if (this.distTrav >= this.maxDist) {
             this.finished = true;
             return;
         }
-        var dx = this.del  * Math.cos(a);
-        var dy = this.del * Math.sin(a);
+
+        var dx = dScaled * Math.cos(a);
+        var dy = dScaled * Math.sin(a);
         this.x += dx;
         this.y += dy;
     }
 };
 
-o.Hill = function (x, y, newKingWithinRadius, playerWithinHillRadius) {
+o.Hill = function (x, y, newKingWithinRadius, playerWithinHillRadius, drawProps) {
     this.x = x;
     this.y = y;
     this.newKingWithinRadius = newKingWithinRadius;
     this.playerWithinHillRadius = playerWithinHillRadius;
-    // this.drawProps = drawProps;
+    this.drawProps = drawProps;
 
     this.moveOutsideHill = function (player) {
         var dx = player.x - this.x, dy = player.y - this.y;
@@ -114,6 +121,13 @@ o.Hill = function (x, y, newKingWithinRadius, playerWithinHillRadius) {
         if (dist >= this.playerWithinHillRadius) return;
         player.x = this.x + dx * this.playerWithinHillRadius / dist;
         player.y = this.y + dy * this.playerWithinHillRadius / dist;
+    };
+
+    this.distFromKingCenter = function (player) {
+        var dx = player.x - this.x, dy = player.y - this.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist <= this.newKingWithinRadius) return dist;
+        return -1;
     };
 
     this.isInsideHill = function (player) {
@@ -125,8 +139,8 @@ o.Hill = function (x, y, newKingWithinRadius, playerWithinHillRadius) {
 
 o.Turret = function (hillX, hillY, radius, isFront, drawProps) {
     this.angle = 0;
-    this.length = 60; // change!
-    this.width = 20; // change!
+    this.length = gameObjectHandler.turret.width;
+    this.width = gameObjectHandler.turret.height;
     this.hillX = hillX;
     this.hillY = hillY;
     this.x = hillX + (isFront ? (radius + this.length/ 2) : -(radius + this.length / 2));

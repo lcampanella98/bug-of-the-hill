@@ -1,3 +1,6 @@
+var gameObjects;
+var myName;
+
 $(function() {
     var socket;
     var gameStarted = false;
@@ -7,31 +10,36 @@ $(function() {
         var addr = 'ws://' + window.location.host + '/play';
         socket = new WebSocket(addr);
         socket.onopen = function () {
-            socket.send('join;' + name);
+            socket.send(JSON.stringify({msg:'join',name:name}));
         };
 
         socket.onmessage = function (evt) {
-            var data;
+            var data = JSON.parse(evt.data);
+            var msg;
             if (!gameStarted) {
-                data = evt.data.toLowerCase();
-                if (data === 'wait') {
+                msg = data.msg.toLowerCase();
+                if (msg === 'wait') {
                     $('#msg').text('Please wait for admin to open game');
-                } else if (data === 'taken') {
+                } else if (msg === 'taken') {
                     $('#msg').text('Name taken');
-                } else if (data === 'success') {
+                } else if (msg === 'success') {
                     $('#name').attr('readonly', true);
                     $('#btn-join').hide();
                     $('#msg').text('Waiting for admin to start match...');
-                } else if (data === 'alreadystarted') {
+                    myName = name;
+                } else if (msg === 'alreadystarted') {
                     $('#msg').text('Game already started.');
-                } else if (data === 'start') {
+                } else if (msg === 'start') {
                     gameStarted = true;
+                    addKeyListener();
                     startGame();
-                } else if (data === 'gameover') {
+                } else if (msg === 'gameover') {
                     // gameOver();
+                } else if (msg === 'loadobjects') {
+                    gameObjects = data.gameObjects;
+                    loadObjectImages();
                 }
             } else {
-                data = JSON.parse(data);
                 updateGameArea(data);
             }
         };
@@ -46,13 +54,26 @@ $(function() {
     });
 
 });
+
 var myGameArea;
-var gameObjects;
+
+var loadObjectImages = function () {
+    var span = $('<span id="span-object-img" style="display:none"></span>');
+    for (var i = 0; i < gameObjects.length; i++) {
+        var obj = gameObjects[i];
+        var file = obj.file;
+        var src = window.location.href + "images/" + file;
+        // console.log(src);
+        var img = $('<img id="object-'+obj.id+'" src="'+ src +'" />');
+        span.append(img);
+    }
+    $('body').append(span);
+};
 
 function startGame() {
     // remove elements
     var body = $('body');
-    $.each(body.children(), function() {$(this).remove();});
+    $.each(body.children(), function() {$(this).hide();});
     body.css('padding', '0px');
     body.css('margin', '0px');
     var width = body.width();
@@ -65,9 +86,6 @@ function startGame() {
             this.canvas.width = cvs.width();
             this.canvas.height = cvs.height();
             this.context = this.canvas.getContext("2d");
-            document.body.insertBefore(this.canvas, document.body.childNodes[0]);
-            this.frameNo = 0;
-            this.interval = setInterval(updateGameArea, 20);
         },
         clear : function() {
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -75,6 +93,10 @@ function startGame() {
     };
 
     myGameArea.start();
+    var currentPlayerInfoDiv = $('<div style="position:absolute;top:30px;left:30px"><h4 id="info-celeb-name"></h4><br><h5>Net Worth: <span id="info-celeb-worth"></span></h5></div>');
+    var kingInfoDiv = $('<div style="position:absolute;left:calc(100% - 200px);top:30px"><h4>King Celeb: <span id="info-king-name"></span></h4><br><h5>Net Worth: <span id="info-king-worth"></span></h5></div>');
+    body.append(currentPlayerInfoDiv);
+    body.append(kingInfoDiv);
 }
 function getGameObject(id) {
     for (var i = 0; i < gameObjects.length; i++) {
@@ -106,6 +128,7 @@ function addKeyListener(socket) {
         } else if (event.keyCode === 32) {
             keyInput['s'] = true;
         }
+        sendInput(socket);
     });
     document.addEventListener('keyup', function(event) {
         if(event.keyCode === 37) { // left
@@ -119,6 +142,7 @@ function addKeyListener(socket) {
         } else if (event.keyCode === 32) {
             keyInput['s'] = false;
         }
+        sendInput(socket);
     });
 
 }
@@ -144,7 +168,23 @@ function isInside(point, vs) {
 
 function updateGameArea(data) {
     var allComponents = data.components;
-    var you = data.you;
+    var kingData = data.kingData;
+    var players = data.players;
+    var you;
+    for (var i = 0; i < players.length; i++) {
+        if (players[i].name === name) {you = players[i];break;}
+    }
+    $('#info-celeb-name').text(you.celebName);
+    $('#info-celeb-worth').text('$' + you.netWorth + ' MIL');
+
+    if (kingData !== null) {
+        $('#info-king-name').text(kingData.name);
+        $('#info-king-worth').text('$' + kingData.netWorth + ' MIL');
+    } else {
+        $('#info-king-name').text('No King');
+        $('#info-king-worth').text('');
+    }
+
     var x0 = you.x, y0 = you.y;
     var cW = myGameArea.canvas.width, cH = myGameArea.canvas.height;
     var dist = Math.sqrt(cW * cW + cH * cH);
@@ -158,6 +198,7 @@ function updateGameArea(data) {
     ];
     var components = [];
     var comp;
+    myGameArea.clear();
     var ctx = myGameArea.context;
     var x, y, w, h, a, color, obj, r;
     for (var i = 0; i < components.length; i++) {
@@ -166,15 +207,16 @@ function updateGameArea(data) {
         y = x0 - comp.x;
         var inside = isInside([x, y], boundingBox);
         if (!inside) continue;
-        a = 270 - comp.angleRadians;
+        a = 270 - comp.a;
         ctx.translate(x, y);
         ctx.rotate(a);
         if (comp.isObj) {
             obj = getGameObject(comp.id);
-            if (obj !== null) { // UPDATE THIS
-                w = obj.imageElement.width;
-                h = obj.imageElement.height;
-                ctx.drawImage(obj.imageElement, -w/2,-h/2,w,h);
+            if (obj !== null) {
+                var img = document.getElementById('object-'+comp.id);
+                w = img.width;
+                h = img.height;
+                ctx.drawImage(img, -w/2,-h/2,w,h);
             }
         } else if (comp.isRect) {
             w = comp.width;
@@ -204,11 +246,14 @@ function updateGameArea(data) {
             }
         } else if (comp.isText) {
             ctx.font = comp.font;
+            ctx.fillStyle = comp.fillStyle;
             ctx.fillText(comp.text, x, y);
         }
         ctx.rotate(-a);
         ctx.translate(-x,-y);
     }
+
+
 }
 
 function parseSocketMessage(msg) {

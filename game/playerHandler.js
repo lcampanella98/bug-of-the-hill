@@ -1,4 +1,4 @@
-var gameObjects = require('gameObjects');
+var gameObjects = require('./gameObjects');
 var Player = gameObjects.Player;
 
 var exports = module.exports = function(){

@@ -1,0 +1,19 @@
+{
+  "celebs": [
+    {
+      "name": "beyonce",
+      "netWorth": 105,
+      "file": "beyonce.jpeg"
+    },
+    {
+      "name": "drake",
+      "netWorth": 94,
+      "file": "drake.jpg"
+    },
+    {
+      "name": "ronaldo",
+      "netWorth": 93,
+      "file": "ronaldo.jpg"
+    }
+  ]
+}
