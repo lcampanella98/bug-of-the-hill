@@ -5,7 +5,7 @@ var game = require('../game/game');
 
 router.ws('/', function (ws, req) {
     ws.on('message', function(message) {
-        if (game.initialized && ! game.isStarted) {
+        if (game.initialized && !game.isStarted) {
             var parts = message.split(';');
             if (parts[0].toLowerCase() === 'join') { // player join
                 var fail = function () {ws.send('taken');};
@@ -20,12 +20,14 @@ router.ws('/', function (ws, req) {
         } else if (game.initialized && game.isStarted) {
             // main game logic
             var data = JSON.parse(message);
-            if (data.msg.toLowerCase() === 'input') {
-                // process input l,r, u,d, s
-
-            }
+            if (data.hasOwnProperty('name') && game.playerInGame(data.name)) {
+                if (data.msg.toLowerCase() === 'input' && data.hasOwnProperty('input')) {
+                    // process input l,r, u,d, s
+                    game.playerInput(data.name, data.input);
+                }
+            } else ws.send('alreadystarted')
         } else if (!game.initialized) {
-            ws.send('fail');
+            ws.send('wait');
         }
     })
 });

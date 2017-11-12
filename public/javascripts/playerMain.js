@@ -14,7 +14,7 @@ $(function() {
             var data;
             if (!gameStarted) {
                 data = evt.data.toLowerCase();
-                if (data === 'fail') {
+                if (data === 'wait') {
                     $('#msg').text('Please wait for admin to open game');
                 } else if (data === 'taken') {
                     $('#msg').text('Name taken');
@@ -22,6 +22,8 @@ $(function() {
                     $('#name').attr('readonly', true);
                     $('#btn-join').hide();
                     $('#msg').text('Waiting for admin to start match...');
+                } else if (data === 'alreadystarted') {
+                    $('#msg').text('Game already started.');
                 } else if (data === 'start') {
                     gameStarted = true;
                     startGame();
