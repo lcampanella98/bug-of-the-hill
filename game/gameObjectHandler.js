@@ -4,14 +4,25 @@ var sizeOf = require('image-size');
 module.exports = {};
 
 var GameComponent = module.exports.GameComponent = function () {
-    // var x, y, a;
-    // var fill, fillColor;
-    // var stroke, strokeColor, lineWidth;
-    // var isCircle, radius;
-    // var isRect, w, h;
-    // var isObj, id;
-    // var isText, font, text;
-
+    this.x = 0;
+    this.y = 0;
+    this.a = 0;
+    this.fill = false;
+    this.fillColor = undefined;
+    this.stroke = false;
+    this.strokeColor = undefined;
+    this.lineWidth = undefined;
+    this.isCircle = false;
+    this.radius = undefined;
+    this.isRect = false;
+    this.w = undefined;
+    this.h = undefined;
+    this.isObj = false;
+    this.id = undefined;
+    this.isBackground = false;
+    this.isText = false;
+    this.font = undefined;
+    this.text = undefined;
 };
 
 var GameObject = module.exports.GameObject = function (id) {
@@ -31,7 +42,10 @@ var allGameObjects = [];
 if (celebObj.hasOwnProperty('celebs')) {
     celebs = celebObj.celebs;
 }
+// id counter
 var idCounter = 0;
+
+// turret
 var turret = new GameObject();
 turret.id = idCounter++;
 turret.file = 'otherimg/turret_sized.png';
@@ -39,6 +53,17 @@ var turretDims = sizeOf('public/images/' + turret.file);
 turret.width = turretDims.width;
 turret.height = turretDims.height;
 allGameObjects.push(turret);
+
+// background grid
+var bgGrid = new GameObject();
+bgGrid.id = idCounter++;
+bgGrid.file = 'otherimg/grid_256.png';
+var bgGridDims = sizeOf('public/images/' + bgGrid.file);
+bgGrid.width = bgGridDims.width;
+bgGrid.height = bgGridDims.height;
+allGameObjects.push(bgGrid);
+
+// celebs
 for (var i = 0;i < celebs.length; i++) {
     var c = new GameObject();
     c.id = idCounter++;
@@ -53,7 +78,12 @@ for (var i = 0;i < celebs.length; i++) {
     c.height = dims.height;
     allGameObjects.push(c);
 }
+var gameObjIdMap = {};
+for (i = 0; i < allGameObjects.length; i++) {
+    gameObjIdMap[allGameObjects[i].id] = allGameObjects[i];
+}
 
-module.exports.allGameObjects = allGameObjects;
+module.exports.allGameObjects = gameObjIdMap;
 module.exports.celebs = celebs;
 module.exports.turret = turret;
+module.exports.bgGrid = bgGrid;

@@ -4,6 +4,7 @@ var myName;
 $(function() {
     var socket;
     var gameStarted = false;
+    var objectsLoaded = false;
 
     $('#btn-join').on('click', function () {
         var name = $('#name').val().trim();
@@ -19,13 +20,18 @@ $(function() {
             if (!gameStarted) {
                 if (msg === 'wait') {
                     $('#msg').text('Please wait for admin to open game');
-                } else if (msg === 'taken') {
+                } else if (msg === 'nametaken') {
                     $('#msg').text('Name taken');
-                } else if (msg === 'success') {
+                } else if (msg === 'nameinvalid') {
+                    $('#msg').text('Name invalid');
+                } else if (msg === 'joinsuccess') {
                     $('#name').attr('readonly', true);
                     $('#btn-join').hide();
                     $('#msg').text('Waiting for admin to start match...');
                     myName = name;
+                    gameObjects = data.gameObjects;
+                    loadObjectImages();
+                    objectsLoaded = true;
                 } else if (msg === 'alreadystarted') {
                     $('#msg').text('Game already started.');
                 } else if (msg === 'start') {
@@ -35,13 +41,11 @@ $(function() {
                     console.log('game started');
                 } else if (msg === 'gameover') {
                     // gameOver();
-                } else if (msg === 'loadobjects') {
-                    gameObjects = data.gameObjects;
-                    loadObjectImages();
                 }
             } else {
                 if (data.msg === 'gameupdate') {
-                    updateGameArea(data);
+                    if (objectsLoaded)
+                        updateGameArea(data);
                 }
             }
         };
@@ -61,13 +65,15 @@ var myGameArea;
 
 var loadObjectImages = function () {
     var span = $('<span id="span-object-img" style="display:none"></span>');
-    for (var i = 0; i < gameObjects.length; i++) {
-        var obj = gameObjects[i];
-        var file = obj.file;
-        var src = window.location.href + "images/" + file;
-        // console.log(src);
-        var img = $('<img id="object-'+obj.id+'" src="'+ src +'" />');
-        span.append(img);
+    for (var id in gameObjects) {
+        if (gameObjects.hasOwnProperty(id)) {
+            var obj = gameObjects[id];
+            var file = obj.file;
+            var src = window.location.href + "images/" + file;
+            // console.log(src);
+            var img = $('<img id="object-'+obj.id+'" src="'+ src +'" />');
+            span.append(img);
+        }
     }
     $('body').append(span);
 };
@@ -103,10 +109,7 @@ function startGame() {
     body.append(positionInfoDiv);
 }
 function getGameObject(id) {
-    for (var i = 0; i < gameObjects.length; i++) {
-        if (gameObjects[i].id === id) return gameObjects[i];
-    }
-    return null;
+    return gameObjects[id];
 }
 
 var keyInput = {"l":false,"r":false,"u":false,"d":false,"s":false};
@@ -190,11 +193,21 @@ function updateGameArea(data) {
         $('#info-king-worth').text('');
     }
 
-    var x0 = you.x, y0 = you.y;
-    $('#pos-info').text(x0 + ',' + y0);
-    // var cW = myGameArea.canvas.width / 2, cH = myGameArea.canvas.height / 2;
-    // var dist = Math.sqrt(cW * cW + cH * cH);
-    // var theta = Math.atan2(cH, cW);
+    var rp = [you.x, you.y];
+   // console.log("rp: "+rp[0]+" , " + rp[[1]]);
+    var cW = myGameArea.canvas.width, cH = myGameArea.canvas.height;
+    var cHW = cW / 2, cHH = cH / 2;
+    var dist = Math.sqrt(cHW * cHW + cHH * cHH);
+    var beta = Math.atan(cHW/cHH);
+    var theta = beta + you.angle;
+    var x0 = [dist * Math.cos(theta), dist * Math.sin(theta)];
+    var r0 = [rp[0]+x0[0],rp[1]+x0[1]];
+    var u = [Math.cos(you.angle - Math.PI / 2), Math.sin(you.angle - Math.PI / 2)];
+   // console.log("u: "+u[0]+" , " + u[[1]]);
+    var v = [Math.cos(you.angle - Math.PI), Math.sin(you.angle - Math.PI)];
+   // console.log("v: "+v[0]+" , " + v[[1]]);
+    var B = [u, v];
+    var Binv = getInv2x2(B);
     // var a1 = you.angle + (Math.PI / 2 - theta), a2 = you.angle - (Math.PI / 2 - theta);
     // var dx1 = dist * Math.cos(a1), dy1 = dist * Math.sin(a1),
     //     dx2 = dist * Math.cos(a2), dy2 = dist * Math.sin(a2);
@@ -204,34 +217,27 @@ function updateGameArea(data) {
     //     [x0 - dx1, y0 - dy1],
     //     [x0 - dx2, y0 - dy2]
     // ];
+    // console.log(Binv);
+    // console.log('sub:');
+    // console.log([rp[0]-r0[0],rp[1]-r0[1]]);
+    // var Xyou = mulMatrixVector(Binv, [rp[0]-r0[0],rp[1]-r0[1]]);
+    //console.log(Xyou);
     var comp;
     myGameArea.clear();
     var ctx = myGameArea.context;
-    var x, y, w, h, a, color, obj, r, c, d;
-    // c = x0 - cW;
-    // d = y0 - cH;
-    // ctx.translate(you.x, you.y);
-    // ctx.rotate(you.angle);
-    ctx.translate(you.x, you.y);
+    var x, xB, w, h, a, color, obj, r;
     for (var i = 0; i < components.length; i++) {
         comp = components[i];
-        //console.log('checking if ' + comp.x + ',' + comp.y + ' is inside');
-        //console.log(boundingBox);
-        // var inside = isInside([comp.x, comp.y], boundingBox);
-        // if (!inside) continue;
-        //console.log('something was inside bounds');
-        //console.log('x: ' + x);
-        x = comp.x;
-        y = comp.y;
-        a = comp.a - you.angle;
-        //console.log(comp);
-        // var xy = rotAboutPoint(comp.x - c - cW, comp.y - d - cH, a);
-        // x = xy.x + cW;
-        // y = xy.y + cH;
-        // y = myGameArea.canvas.height - y;
-        //console.log('y: ' + y);
-        //console.log('a: ' + a);
-        ctx.translate(x, y);
+        x = [comp.x - r0[0], comp.y - r0[1]];
+        xB = mulMatrixVector(Binv, x);
+
+        // check if point is inside bounding box
+        if (!comp.isBackground
+            && (xB[0] < -100 || xB[0] > cW + 100 || xB[1] < -100 || xB[1] > cH + 100)) continue;
+
+        a = you.angle - comp.a;
+
+        ctx.translate(xB[0],xB[1]);
         ctx.rotate(a);//Math.PI * 2 - a);
         if (comp.isObj) {
             obj = getGameObject(comp.id);
@@ -258,11 +264,11 @@ function updateGameArea(data) {
             r = comp.radius;
             ctx.beginPath();
             ctx.arc(0, 0, r, 0, 2 * Math.PI, false);
+            ctx.closePath();
             if (comp.fill) {
                 ctx.fillStyle = comp.fillColor;
                 ctx.fill();
-            }
-            if (comp.stroke) {
+            } else if (comp.stroke) {
                 ctx.strokeStyle = comp.strokeColor;
                 ctx.lineWidth = comp.lineWidth;
                 ctx.stroke();
@@ -270,13 +276,32 @@ function updateGameArea(data) {
         } else if (comp.isText) {
             ctx.font = comp.font;
             ctx.fillStyle = comp.fillStyle;
-            ctx.fillText(comp.text, x, y);
+            ctx.fillText(comp.text, xB[0], xB[1]);
         }
         ctx.rotate(-a);//-(2 * Math.PI - a));
-        ctx.translate(-x,-y);
+        ctx.translate(-xB[0],-xB[1]);
     }
+}
+
+function mulMatrixVector(m, v) {
+    var mNumRows = m.length, vNumCols = v.length, a = new Array(vNumCols);
+    for (var r = 0; r < mNumRows; ++r) {
+        a[r] = 0;
+        for (var c = 0; c < vNumCols; ++c) {
+            a[r] += m[r][c] * v[c];
+        }
+    }
+    return a;
+}
 
 
+function getInv2x2(M) {
+    var detScale = 1 / (M[0][0] * M[1][1] - M[0][1] * M[1][0]);
+    var inv = [
+        [detScale * M[1][1], -detScale * M[1][0]],
+        [-detScale * M[0][1], detScale * M[0][0]]
+    ];
+    return inv;
 }
 
 function rotAboutPoint(x, y, a) {

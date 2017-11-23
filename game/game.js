@@ -34,7 +34,8 @@ game.start = function () {
 
 game.playerJoin = function (name, ws) {
     if (this.playerHandler.hasPlayer(name)) return false;
-    this.playerHandler.addPlayer(name, ws);
+    var newPlayer = this.playerHandler.addPlayer(name, ws);
+    if (this.isStarted) this.gameWorld.initPlayer(newPlayer);
     this.broadcastToAdmins(JSON.stringify({msg:'playerjoin', name:name}));
     return true;
 };

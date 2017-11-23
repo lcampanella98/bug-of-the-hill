@@ -18,6 +18,10 @@ $(function () {
         var msg = data.msg.toLowerCase();
         if (msg === 'playerjoin') {
             if (data.hasOwnProperty('name')) $('#players').append('<li>' + data.name + '</li>');
+        } else if (msg === 'start') {
+            var btnPar = $('#btn-start').parent();
+            $('#btn-start').remove();
+            btnPar.append('<h3>Game Started!</h3>');
         }
     };
 

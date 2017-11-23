@@ -21,7 +21,11 @@ o.Player = function (name, ws) {
         this.netWorth = celeb.netWorth;
         this.input = {"l":false,"r":false,"u":false,"d":false,"s":false};
         this.timeUntilNextFire = 0;
-        this.fireDelay = 1000;
+        this.fireDelay = 300;
+    };
+
+    this.setFireDelay = function (fireDelayMs) {
+        this.fireDelay = fireDelayMs;
     };
 
     this.update = function (dt) {
@@ -39,14 +43,11 @@ o.Player = function (name, ws) {
                 dy = - vScale * Math.sin(this.a);
             }
         }
-        //console.log('dx: ' + dx + ', dy: ' + dy);
-        var oldX = this.x, oldY = this.y;
+        var newDeltas = this.getValidMovement(dx, dy);
+        dx = newDeltas[0];
+        dy = newDeltas[1];
         this.x += dx;
         this.y += dy;
-        if (!this.gameWorld.playerCanMoveTo(this)) {
-            this.x = oldX;
-            this.y = oldY;
-        }
         // rotation
         var da = 0;
         var angularSpeedScaled = this.angularSpeed * dt / 1000;
@@ -54,8 +55,8 @@ o.Player = function (name, ws) {
             if (l) da = angularSpeedScaled;
             else if (r) da = -angularSpeedScaled;
         }
-        if (da !== 0 && this.isKing) gameWorld.kingRotated(this);
         this.a += da;
+        if (da !== 0 && this.isKing) this.gameWorld.kingRotated(this);
         // fire logic
         if (s && this.timeUntilNextFire <= 0) {
             this.gameWorld.fireProjectile(this);
@@ -65,6 +66,21 @@ o.Player = function (name, ws) {
         if (this.isKing) {
             this.kingTime += dt / 1000;
         }
+    };
+
+    this.getValidMovement = function (dx, dy) {
+        var newX = this.x + dx, newY = this.y + dy;
+        var newDx = dx, newDy = dy;
+        // check world bounds
+        if (newX < 0 || newX > this.gameWorld.worldWidth) newDx = 0;
+        if (newY < 0 || newY > this.gameWorld.worldHeight) newDy = 0;
+        // check hill
+        // player cannot move inside hill unless it is empty
+        if (this.gameWorld.king !== null && this.gameWorld.hill.isInsideHill(this)) {
+            newDx = 0;
+            newDy = 0;
+        }
+        return [newDx, newDy];
     };
 
     this.getBoundingBox = function() {
@@ -88,24 +104,29 @@ o.Projectile = function (x, y, angle, delDist, maxDist, player, drawProps) {
     this.y = y;
     this.a = angle;
     this.del = delDist;
-    this.distTrav = 0;
+    this.distTrav = 0.0;
     this.maxDist = maxDist;
     this.finished = false;
     this.drawProps = drawProps;
     this.player = player;
+    // console.log('projectile fired');
 
     this.update = function (dt) {
         var dScaled = this.del * dt / 1000.0;
+        //console.log('dscaled: ' + dScaled);
         this.distTrav += dScaled;
         if (this.distTrav >= this.maxDist) {
+            // console.log('projectile finished');
             this.finished = true;
             return;
         }
 
         var dx = dScaled * Math.cos(this.a);
         var dy = dScaled * Math.sin(this.a);
+        //console.log('bef: ' + this.x + ','+this.y);
         this.x += dx;
         this.y += dy;
+        // console.log('aft: ' + this.x + ','+this.y);
     }
 };
 
@@ -139,27 +160,27 @@ o.Hill = function (x, y, newKingWithinRadius, playerWithinHillRadius, drawProps)
 };
 
 o.Turret = function (hillX, hillY, radius, isFront, drawProps) {
+
+    this.isFront = isFront;
+    this.drawProps = drawProps;
+
     this.angle = isFront ? 0 : Math.PI;
     this.length = gameObjectHandler.turret.height;
     this.width = gameObjectHandler.turret.width;
     this.hillX = hillX;
     this.hillY = hillY;
-    var offset = radius + this.length / 2;
-    if (!isFront) offset = -offset;
-    this.x = hillX + offset;
-    this.y = hillY;
-    this.drawProps = drawProps;
-    console.log('front: ' + isFront);
-    console.log('x: ' + this.x);
-    console.log('y: ' + this.y);
-    this.newAngle = function (angle) {
-        console.log('new angle');
-        this.angle = isFront ? angle : angle + Math.PI;
-        var dx = this.x - this.hillX, dy = this.y - this.hillY;
-        var cos = Math.cos(angle), sin = Math.sin(angle);
-        var dxN = dx * cos - dy * sin;
-        var dyN = dy * cos + dx * sin;
-        this.x = this.hillX + dxN;
-        this.y = this.hillY + dyN;
+    this.radius = radius + this.length / 2;
+
+    this.calcCoords = function () {
+        this.x = this.hillX + this.radius * Math.cos(this.angle);
+        this.y = this.hillY + this.radius * Math.sin(this.angle);
     };
+
+    this.newAngle = function (angle) {
+        // console.log('new angle');
+        this.angle = this.isFront ? angle : angle + Math.PI;
+        this.calcCoords();
+    };
+
+    this.calcCoords();
 };

@@ -10,7 +10,9 @@ var exports = module.exports = function(){
         return false;
     };
     this.addPlayer = function (name, ws) {
-        this.players.push(new Player(name, ws));
+        var p = new Player(name, ws);
+        this.players.push(p);
+        return p;
     };
     this.removePlayer = function (name) {
         for (var i = 0; i < this.players.length; i++) {

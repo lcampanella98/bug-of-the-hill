@@ -9,16 +9,6 @@ var GameComponent = gameObjectHandler.GameComponent;
 
 
 var world = module.exports = function (game, players, gameTimeLimit) {
-    this.gotPlayerInput = function (name, input) {
-        var p;
-        for (var i = 0; i < players.length; i++ ) {
-            p = players[i];
-            if (p.name === name) {
-                p.input = input;
-                //console.log(input);
-            }
-        }
-    };
 
     this.game = game;
     this.gameTimeLimit = gameTimeLimit;
@@ -31,6 +21,20 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     this.worldHeight = 1000;
     this.playersList = players;
     this.dataObject = null;
+
+    this.defaultFireDelay = 300;
+    this.kingFireDelay = 600;
+
+    this.gotPlayerInput = function (name, input) {
+        var p;
+        for (var i = 0; i < players.length; i++ ) {
+            p = players[i];
+            if (p.name === name) {
+                p.input = input;
+            }
+        }
+    };
+    //console.log(input);
 
     this.getDefaultProjectileDrawProps = function () {
         return {
@@ -54,15 +58,23 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         };
     };
 
+    this.getHillKingDrawProps = function () {
+        return {
+            strokeColor: 'red',
+            lineWidth: 10
+        };
+    };
+
     this.fireProjectile = function (player) {
-        var x = player.x, y = player.y, angle = player.angle;
+        var x = player.x, y = player.y, angle = player.a;
+        var defSpeed = 300, defMaxDist = 280, kingSpeed = 350, kingMaxDist = 400;
         if (player.isKing) {
-            var p1 = new Projectile(this.turretFront.x, this.turretFront.y, angle, 1.5, 20, player, this.getKingProjectileDrawProps());
-            var p2 = new Projectile(this.turretRear.x, this.turretRear.y, angle, 1.5, 20, player, this.getKingProjectileDrawProps());
+            var p1 = new Projectile(this.turretFront.x, this.turretFront.y, this.turretFront.angle, defSpeed, defMaxDist, player, this.getKingProjectileDrawProps());
+            var p2 = new Projectile(this.turretRear.x, this.turretRear.y, this.turretRear.angle, defSpeed, defMaxDist, player, this.getKingProjectileDrawProps());
             this.projectileList.push(p1);
             this.projectileList.push(p2);
         } else {
-            var proj = new Projectile(x, y, angle, 1.5, 20, player, this.getDefaultProjectileDrawProps());
+            var proj = new Projectile(x, y, angle, defSpeed, defMaxDist, player, this.getDefaultProjectileDrawProps());
             this.projectileList.push(proj);
         }
     };
@@ -76,6 +88,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     };
 
     this.initPlayer = function (player) {
+        player.gameWorld = this;
         var side = this.randInt(4);
         var pad = 50;
         var x, y, angle;
@@ -99,14 +112,21 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         var randCelebIdx = this.randInt(gameObjectHandler.celebs.length);
         var celeb = gameObjectHandler.celebs[randCelebIdx];
         player.init(x, y, angle, celeb);
+        player.setFireDelay(this.defaultFireDelay);
+    };
+
+    this.kingKilled = function () {
+        var playerTemp = this.king;
+        this.king = null;
+        this.initPlayer(playerTemp);
+        this.hill.drawProps = this.getHillDrawProps();
     };
 
     this.playerHit = function (player) {
         if (player.isKing) {
             player.netWorth -= this.hitTax;
             if (player.netWorth <= 0) {
-                this.king = null;
-                this.initPlayer(player);
+                this.kingKilled();
             }
         } else {
             this.initPlayer(player);
@@ -137,18 +157,6 @@ var world = module.exports = function (game, players, gameTimeLimit) {
             && !(projectile.player.name === player.name); // player cannot be hit by own projectile
     };
 
-    this.playerCanMoveTo = function (player) {
-        var p;
-        for (var i = 0; i < this.playersList.length; i++) {
-            p = this.playersList[i];
-            // check world bounds
-            if (p.x < 0 || p.x > this.worldWidth) return false;
-            if (p.y < 0 || p.y > this.worldHeight) return false;
-            // check hill
-            if (this.king === null && this.hill.isInsideHill(player)) return false;
-        }
-        return true;
-    };
 
     this.kingRotated = function (king) {
         this.turretFront.newAngle(king.a);
@@ -161,6 +169,8 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         player.a = this.turretFront.angle;
         player.isKing = true;
         this.king = player;
+        this.king.setFireDelay(this.kingFireDelay);
+        this.hill.drawProps = this.getHillKingDrawProps();
     };
 
 
@@ -169,7 +179,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         var i;
         // step 1 update projectiles
         for (i = 0; i < this.projectileList.length; i++) {
-            this.projectileList[i].update();
+            this.projectileList[i].update(dt);
             if (this.projectileList[i].finished) this.projectileList.splice(i--, 1);
         }
         // step 2 check projectile collisions with players
@@ -181,7 +191,10 @@ var world = module.exports = function (game, players, gameTimeLimit) {
                 continue;
             }
             for (var j = 0; j < this.projectileList.length; j++) {
-                if (this.projCollidingWithPlayer(this.projectileList[j], p)) this.playerHit(p);
+                if (this.projCollidingWithPlayer(this.projectileList[j], p)) {
+                    this.playerHit(p);
+                    this.projectileList.splice(j--, 1);
+                }
             }
         }
         // step 3 process all input
@@ -215,12 +228,17 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         }
     };
 
+
     this.generateDataObject = function () {
         var obj = {};
         obj.components = [];
-        obj.components.push(this.genHillComponent(this.hill));
+        for (var i = 0; i < this.backgroundComponents.length; i++) {
+            obj.components.push(this.backgroundComponents[i]);
+        }
         obj.components.push(this.genTurretComponent(this.turretFront));
         obj.components.push(this.genTurretComponent(this.turretRear));
+        obj.components.push(this.genHillComponent(this.hill));
+
         for (var i = 0; i < this.playersList.length; i++) {
             obj.components.push(this.genPlayerComponent(this.playersList[i]));
         }
@@ -235,15 +253,34 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         return obj;
     };
 
+    this.genBackgroundComponents = function () {
+        var xMax = this.worldWidth + 2000, yMax = this.worldHeight + 2000;
+        var grid = gameObjectHandler.bgGrid;
+        var comps = [];
+        var comp;
+        for (var x = -xMax/2; x <= xMax/2; x += grid.width) {
+            for (var y = -yMax/2; y <= yMax/2; y += grid.height) {
+                comp = new GameComponent();
+                comp.id = grid.id;
+                comp.x = x;
+                comp.y = y;
+                comp.a = 0;
+                comp.isObj = true;
+                comp.isBackground = true;
+                comps.push(comp);
+            }
+        }
+        return comps;
+    };
+
+    this.backgroundComponents = this.genBackgroundComponents();
+
     this.genPlayerComponent = function (player) {
         var comp = new GameComponent();
         comp.x = player.x;
         comp.y = player.y;
         comp.a = player.a;
         comp.isObj = true;
-        comp.isRect = false;
-        comp.isCircle = false;
-        comp.isText = false;
         comp.id = player.celeb.id;
         return comp;
     };
@@ -254,9 +291,6 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         comp.y = turret.y;
         comp.a = turret.angle;
         comp.isObj = true;
-        comp.isRect = false;
-        comp.isCircle = false;
-        comp.isText = false;
         comp.id = gameObjectHandler.turret.id;
         return comp;
     };
@@ -266,10 +300,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         comp.x = proj.x;
         comp.y = proj.y;
         comp.a = proj.a;
-        comp.isRect = false;
         comp.isCircle = true;
-        comp.isText = false;
-        comp.isObj = false;
         comp.fill = true;
         comp.stroke = true;
         comp.radius = proj.drawProps.radius;
@@ -284,11 +315,8 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         comp.x = hill.x;
         comp.y = hill.y;
         comp.a = 0;
-        comp.isRect = false;
+        comp.radius = hill.playerWithinHillRadius;
         comp.isCircle = true;
-        comp.isText = false;
-        comp.isObj = false;
-        comp.fill = false;
         comp.stroke = true;
         comp.strokeColor = hill.drawProps.strokeColor;
         comp.lineWidth = hill.drawProps.lineWidth;
@@ -300,10 +328,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         comp.x = x;
         comp.y = y;
         comp.font = font;
-        comp.isRect = false;
-        comp.isCircle = false;
         comp.isText = true;
-        comp.isObj = false;
         comp.text = text;
         comp.fillStyle = color;
         return comp;
@@ -314,12 +339,11 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     };
 
     for (var i = 0; i < this.playersList.length; i++) {
-        this.playersList[i].gameWorld = this;
         this.initPlayer(this.playersList[i]);
     }
 
-    this.hill = new Hill(this.worldWidth / 2, this.worldHeight / 2, 60, 200, this.getHillDrawProps());
-    this.turretFront = new Turret(this.hill.x, this.hill.y, 30, true, null);
-    this.turretRear = new Turret(this.hill.x, this.hill.y, 30, false, null);
+    this.hill = new Hill(this.worldWidth / 2, this.worldHeight / 2, 60, 150, this.getHillDrawProps());
+    this.turretFront = new Turret(this.hill.x, this.hill.y, 32, true, null);
+    this.turretRear = new Turret(this.hill.x, this.hill.y, 32, false, null);
 };
 
