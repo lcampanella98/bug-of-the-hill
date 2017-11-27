@@ -16,6 +16,9 @@ game.admins = [];
 
 game.adminJoin = function(ws) {
     game.admins.push(new Admin(ws));
+    for (var i = 0; i < this.playerHandler.players.length; i++) {
+        ws.send(JSON.stringify({msg:'playerjoin', name:this.playerHandler.players[i]}));
+    }
 };
 
 game.init = function () {
@@ -26,7 +29,7 @@ game.init = function () {
 
 game.start = function () {
     this.isStarted = true;
-    this.gameTimeLimit = 2 * 60 * 1000;
+    this.gameTimeLimit = 3 * 60 * 1000;
     this.gameWorld = new GameWorld(this, this.playerHandler.players, this.gameTimeLimit);
     this.broadcastMessage(JSON.stringify({msg:'start'}));
     this.updateWorld();
@@ -69,9 +72,10 @@ game.sendNextFrame = function () {
             p = players[i];
             if (p.isOnline())
                 dataObj.players.push({
-                    name:p.name,
+                    name: p.name,
                     netWorth: p.netWorth,
                     celebName: p.celeb.name,
+                    kingTime: p.kingTime,
                     x: p.x, y: p.y, angle: p.a});
         }
         var dataStr = JSON.stringify(dataObj);

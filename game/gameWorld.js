@@ -13,6 +13,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     this.game = game;
     this.gameTimeLimit = gameTimeLimit;
     this.timeLeft = this.gameTimeLimit;
+    this.isGameOver = false;
 
     this.projectileList = [];
     this.king = null;
@@ -175,6 +176,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
 
 
     this.updateWorld = function (dt) {
+        if (this.isGameOver) return;
 
         var i;
         // step 1 update projectiles
@@ -215,58 +217,120 @@ var world = module.exports = function (game, players, gameTimeLimit) {
                 }
             }
             if (newKing !== null) {
-                this.newKing(p);
+                this.newKing(newKing);
             }
         }
 
-        this.gameTimeLimit -= dt;
+        this.timeLeft -= dt;
 
-        if (this.gameTimeLimit <= 0) {
+        if (this.timeLeft <= 0) {
             this.gameOver();
-        } else {
-            this.dataObject = this.generateDataObject();
         }
+        this.dataObject = this.generateDataObject();
     };
 
 
     this.generateDataObject = function () {
         var obj = {};
         obj.components = [];
-        for (var i = 0; i < this.backgroundComponents.length; i++) {
+        var i;
+        for (i = 0; i < this.backgroundComponents.length; i++) {
             obj.components.push(this.backgroundComponents[i]);
+        }
+        for (i = 0; i < this.boundaryRects.length; i++) {
+            obj.components.push(this.boundaryRects[i]);
         }
         obj.components.push(this.genTurretComponent(this.turretFront));
         obj.components.push(this.genTurretComponent(this.turretRear));
         obj.components.push(this.genHillComponent(this.hill));
 
-        for (var i = 0; i < this.playersList.length; i++) {
+        for (i = 0; i < this.playersList.length; i++) {
             obj.components.push(this.genPlayerComponent(this.playersList[i]));
         }
-        for (var i = 0; i < this.projectileList.length; i++) {
+        for (i = 0; i < this.projectileList.length; i++) {
             obj.components.push(this.genProjectileComponent(this.projectileList[i]));
         }
         obj.kingData = this.king === null ? null : {
             name: this.king.name,
             celebName: this.king.celeb.name,
-            netWorth: this.king.netWorth
+            netWorth: this.king.netWorth,
+            kingTime: this.king.kingTime
         };
+        var topKing;
+        var topTime;
+        var p;
+        for (i = 0; i < this.playersList.length; i++) {
+            p = this.playersList[i];
+            if (p.kingTime > 0 && (topTime === undefined || p.kingTime > topTime)) {
+                topKing = p;
+                topTime = p.kingTime;
+            }
+        }
+        obj.topKing = topKing === undefined ? null : {
+            name: topKing.name,
+            netWorth: topKing.netWorth,
+            kingTime: topKing.kingTime,
+            celebName: topKing.celeb.name
+        };
+        obj.gameTimeLeft = this.timeLeft;
+
         return obj;
     };
 
+    this.genBoundryRects = function () {
+        var x, y, w, h, offset = 50;
+        var comps = [];
+        var comp;
+        for (var i = 0; i < 4; i++) {
+            if (i === 0) {
+                x = 0;
+                y = this.worldHeight / 2;
+                h = offset;
+                w = this.worldHeight + offset;
+            } else if (i === 1) {
+                x = this.worldWidth;
+                y = this.worldHeight / 2;
+                h = offset;
+                w = this.worldHeight + offset;
+            } else if (i === 2) {
+                x = this.worldWidth / 2;
+                y = 0;
+                h = this.worldWidth + offset;
+                w = offset;
+            } else if (i === 3) {
+                x = this.worldWidth / 2;
+                y = this.worldHeight;
+                h = this.worldWidth + offset;
+                w = offset;
+            }
+            comp = new GameComponent();
+            comp.isRect = true;
+            comp.fill = true;
+            comp.fillColor = 'black';
+            comp.x = x;
+            comp.y = y;
+            comp.w = w;
+            comp.h = h;
+            comps.push(comp);
+        }
+        return comps;
+    };
+
+    this.boundaryRects = this.genBoundryRects();
+
     this.genBackgroundComponents = function () {
-        var xMax = this.worldWidth + 2000, yMax = this.worldHeight + 2000;
+        var xMax = this.worldWidth + 3000, yMax = this.worldHeight + 3000;
         var grid = gameObjectHandler.bgGrid;
         var comps = [];
         var comp;
-        for (var x = -xMax/2; x <= xMax/2; x += grid.width) {
-            for (var y = -yMax/2; y <= yMax/2; y += grid.height) {
+        for (var x = this.worldWidth/2-xMax/2; x <= this.worldWidth/2+xMax/2; x += grid.width) {
+            for (var y = this.worldHeight/2-yMax/2; y <= this.worldHeight/2+yMax/2; y += grid.height) {
                 comp = new GameComponent();
                 comp.id = grid.id;
                 comp.x = x;
                 comp.y = y;
                 comp.a = 0;
                 comp.isObj = true;
-                comp.isBackground = true;
                 comps.push(comp);
             }
         }
@@ -330,12 +394,12 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         comp.font = font;
         comp.isText = true;
         comp.text = text;
-        comp.fillStyle = color;
+        comp.fillColor = color;
         return comp;
     };
 
     this.gameOver = function () {
-
+        this.isGameOver = true;
     };
 
     for (var i = 0; i < this.playersList.length; i++) {

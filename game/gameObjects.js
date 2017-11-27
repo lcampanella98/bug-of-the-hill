@@ -64,7 +64,7 @@ o.Player = function (name, ws) {
         }
         else if (this.timeUntilNextFire > 0) this.timeUntilNextFire -= dt;
         if (this.isKing) {
-            this.kingTime += dt / 1000;
+            this.kingTime += dt;
         }
     };
 

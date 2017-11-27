@@ -3,17 +3,17 @@
     {
       "name": "beyonce",
       "netWorth": 105,
-      "file": "beyonce.jpeg"
+      "file": "beyonce.png"
     },
     {
       "name": "drake",
       "netWorth": 94,
-      "file": "drake.jpg"
+      "file": "drake.png"
     },
     {
       "name": "ronaldo",
       "netWorth": 93,
-      "file": "ronaldo.jpg"
+      "file": "ronaldo.png"
     }
   ]
 }

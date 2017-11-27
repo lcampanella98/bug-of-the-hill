@@ -19,16 +19,19 @@ var GameComponent = module.exports.GameComponent = function () {
     this.h = undefined;
     this.isObj = false;
     this.id = undefined;
-    this.isBackground = false;
     this.isText = false;
     this.font = undefined;
     this.text = undefined;
 };
 
-var GameObject = module.exports.GameObject = function (id) {
+var GameObject = module.exports.GameObject = function () {
     // id
     // img file if not celeb
     // celeb with image file
+    this.id = undefined;
+    this.file = undefined;
+    this.width = undefined;
+    this.height = undefined;
 };
 
 module.exports.Celeb = function () {
