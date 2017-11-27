@@ -278,7 +278,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     };
 
     this.genBoundryRects = function () {
-        var x, y, w, h, offset = 50;
+        var x, y, w, h, offset = 10;
         var comps = [];
         var comp;
         for (var i = 0; i < 4; i++) {
