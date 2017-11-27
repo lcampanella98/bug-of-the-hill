@@ -18,8 +18,8 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     this.projectileList = [];
     this.king = null;
     this.hitTax = 10; // update this value
-    this.worldWidth = 1000;
-    this.worldHeight = 1000;
+    this.worldWidth = 2000;
+    this.worldHeight = 2000;
     this.playersList = players;
     this.dataObject = null;
 
