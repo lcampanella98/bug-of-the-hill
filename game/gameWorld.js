@@ -400,7 +400,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
 
     this.gameOver = function () {
         this.isGameOver = true;
-        setTimeout(this.newGame, 3000);
+        setTimeout(this.newGame.bind(this), 3000);
     };
 
     this.initPlayersNewGame = function () {
