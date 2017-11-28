@@ -28,6 +28,10 @@ o.Player = function (name, ws) {
         this.fireDelay = fireDelayMs;
     };
 
+    this.newGame = function () {
+        this.kingTime = 0;
+    };
+
     this.update = function (dt) {
         var ip = this.input;
         var l = ip.l, r = ip.r, u = ip.u, d = ip.d, s = ip.s;

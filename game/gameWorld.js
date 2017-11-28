@@ -400,11 +400,30 @@ var world = module.exports = function (game, players, gameTimeLimit) {
 
     this.gameOver = function () {
         this.isGameOver = true;
+        setTimeout(this.newGame, 3000);
     };
 
-    for (var i = 0; i < this.playersList.length; i++) {
-        this.initPlayer(this.playersList[i]);
-    }
+    this.initPlayersNewGame = function () {
+        for (var i = 0; i< this.playersList.length; i++) {
+            this.initPlayer(this.playersList[i]);
+            this.playersList[i].newGame();
+        }
+    };
+
+    this.initPlayers = function () {
+        for (var i = 0; i < this.playersList.length; i++) {
+            this.initPlayer(this.playersList[i]);
+        }
+    };
+
+    this.newGame = function () {
+        this.initPlayersNewGame();
+        this.timeLeft = this.gameTimeLimit;
+        this.king = null;
+        this.isGameOver = false;
+    };
+
+    this.newGame();
 
     this.hill = new Hill(this.worldWidth / 2, this.worldHeight / 2, 60, 150, this.getHillDrawProps());
     this.turretFront = new Turret(this.hill.x, this.hill.y, 32, true, null);

@@ -14,6 +14,11 @@
       "name": "ronaldo",
       "netWorth": 93,
       "file": "ronaldo.png"
+    },
+    {
+      "name": "howie",
+      "netWorth": 75,
+      "file": "howie.png"
     }
   ]
 }

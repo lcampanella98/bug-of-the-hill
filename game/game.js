@@ -29,7 +29,7 @@ game.init = function () {
 
 game.start = function () {
     this.isStarted = true;
-    this.gameTimeLimit = 3 * 60 * 1000;
+    this.gameTimeLimit = 3 * 1000;
     this.gameWorld = new GameWorld(this, this.playerHandler.players, this.gameTimeLimit);
     this.broadcastMessage(JSON.stringify({msg:'start'}));
     this.updateWorld();

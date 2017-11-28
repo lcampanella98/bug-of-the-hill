@@ -140,6 +140,8 @@ function updateGameArea(data) {
             msg = 'Round Winner:' + topKing.name + '<br>' + Math.ceil(topKing.kingTime/1000) + " seconds";
         else msg = 'No Winner';
         $('#top-king-info').html(msg);
+    } else {
+        $("#top-king-info").html("");
     }
 
     if (kingData !== null) {
