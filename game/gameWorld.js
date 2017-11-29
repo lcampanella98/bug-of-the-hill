@@ -17,14 +17,14 @@ var world = module.exports = function (game, players, gameTimeLimit) {
 
     this.projectileList = [];
     this.king = null;
-    this.hitTax = 10; // update this value
+    this.hitTax = 8; // update this value
     this.worldWidth = 2000;
     this.worldHeight = 2000;
     this.playersList = players;
     this.dataObject = null;
 
-    this.defaultFireDelay = 300;
-    this.kingFireDelay = 600;
+    this.defaultFireDelay = 400;
+    this.kingFireDelay = 800;
 
     this.gotPlayerInput = function (name, input) {
         var p;
