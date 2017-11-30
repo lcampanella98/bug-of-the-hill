@@ -243,9 +243,10 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         obj.components.push(this.genTurretComponent(this.turretFront));
         obj.components.push(this.genTurretComponent(this.turretRear));
         obj.components.push(this.genHillComponent(this.hill));
-
+        var p;
         for (i = 0; i < this.playersList.length; i++) {
-            obj.components.push(this.genPlayerComponent(this.playersList[i]));
+            p = this.playersList[i];
+            obj.components.push(this.genPlayerComponent(p));
         }
         for (i = 0; i < this.projectileList.length; i++) {
             obj.components.push(this.genProjectileComponent(this.projectileList[i]));
@@ -338,6 +339,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     };
 
     this.backgroundComponents = this.genBackgroundComponents();
+    this.font = "20px sans-serif";
 
     this.genPlayerComponent = function (player) {
         var comp = new GameComponent();
@@ -346,6 +348,8 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         comp.a = player.a;
         comp.isObj = true;
         comp.id = player.celeb.id;
+        comp.playerName = player.name;
+        comp.font = this.font;
         return comp;
     };
 

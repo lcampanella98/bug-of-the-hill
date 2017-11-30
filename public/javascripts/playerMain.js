@@ -184,7 +184,7 @@ function updateGameArea(data) {
         a = you.angle - comp.a;
 
         ctx.translate(xB[0],xB[1]);
-        ctx.rotate(a);//Math.PI * 2 - a);
+        ctx.rotate(a);
         if (comp.isObj) {
             obj = getGameObject(comp.id);
             if (obj !== null) {
@@ -192,6 +192,14 @@ function updateGameArea(data) {
                 w = img.width;
                 h = img.height;
                 ctx.drawImage(img, -w/2,-h/2,w,h);
+                if (comp.playerName !== undefined) {
+                    //console.log(comp.playerName);
+                    ctx.rotate(-a);
+                    ctx.font = comp.font;
+                    ctx.fillStyle = comp.fillStyle;
+                    ctx.fillText(comp.playerName, -5*comp.playerName.length,-h/2-10);
+                    ctx.rotate(a);
+                }
             }
         } else if (comp.isRect) {
             w = comp.w;
