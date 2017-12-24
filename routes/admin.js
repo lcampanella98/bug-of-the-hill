@@ -4,6 +4,7 @@ var router = express.Router();
 var game = require('../game/game');
 game.init();
 game.start();
+
 router.ws('/', function (ws, req) {
     ws.on('message', function(message) {
         var data = JSON.parse(message);

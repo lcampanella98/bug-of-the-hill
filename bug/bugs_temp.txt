@@ -1,0 +1,19 @@
+,
+    {
+      "name": "spider",
+      "speed": 200,
+      "health": 100,
+      "sprites": [
+        "spider_1.png",
+        "spider_2.png"
+      ]
+    },
+    {
+      "name": "cricket",
+      "speed": 200,
+      "health": 150,
+      "sprites": [
+        "cricket_1.png",
+        "cricket_2.png"
+      ]
+    }

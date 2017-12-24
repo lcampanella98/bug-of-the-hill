@@ -2,22 +2,22 @@
   "celebs": [
     {
       "name": "beyonce",
-      "netWorth": 105,
+      "health": 105,
       "file": "beyonce.png"
     },
     {
       "name": "drake",
-      "netWorth": 94,
+      "health": 94,
       "file": "drake.png"
     },
     {
       "name": "ronaldo",
-      "netWorth": 93,
+      "health": 93,
       "file": "ronaldo.png"
     },
     {
       "name": "howie",
-      "netWorth": 75,
+      "health": 75,
       "file": "howie.png"
     }
   ]

@@ -8,17 +8,18 @@ o.Player = function (name, ws) {
     this.kingTime = 0;
     this.gameWorld = null;
 
-    this.init = function (x, y, angle, celeb) {
+    this.init = function (x, y, angle, bug) {
         this.x = x;
         this.y = y;
         this.a = angle;
         this.angularSpeed = 2.0;
-        this.celeb = celeb;
-        this.width = celeb.width;
-        this.height = celeb.height;
+        this.bug = bug;
+        this.health = bug.health;
+        this.curSpriteIndex = 0;
+        this.curSpriteTime = 0;
+        this.timePerSprite = 100;
         this.isKing = false;
-        this.speed = 200.0;
-        this.netWorth = celeb.netWorth;
+        this.speed = bug.speed;
         this.input = {"l":false,"r":false,"u":false,"d":false,"s":false};
         this.timeUntilNextFire = 0;
         this.fireDelay = 300;
@@ -28,8 +29,22 @@ o.Player = function (name, ws) {
         this.fireDelay = fireDelayMs;
     };
 
+    this.getCurrentSprite = function () {
+        return this.bug.sprites[this.curSpriteIndex];
+    };
+
     this.newGame = function () {
         this.kingTime = 0;
+        this.curSpriteTime = 0;
+    };
+
+    this.updateSprite = function (dt) {
+        this.curSpriteTime += dt;
+        if (this.curSpriteTime >= this.timePerSprite) {
+            this.curSpriteIndex++;
+            this.curSpriteIndex %= this.bug.sprites.length;
+            this.curSpriteTime = 0;
+        }
     };
 
     this.update = function (dt) {
@@ -61,6 +76,12 @@ o.Player = function (name, ws) {
         }
         this.a += da;
         if (da !== 0 && this.isKing) this.gameWorld.kingRotated(this);
+
+        if (
+            ((l || r) && !(l && r))
+            || ((u || d) && !(u && d))
+        ) this.updateSprite(dt);
+
         // fire logic
         if (s && this.timeUntilNextFire <= 0) {
             this.gameWorld.fireProjectile(this);
@@ -70,6 +91,7 @@ o.Player = function (name, ws) {
         if (this.isKing) {
             this.kingTime += dt;
         }
+
     };
 
     this.getValidMovement = function (dx, dy) {

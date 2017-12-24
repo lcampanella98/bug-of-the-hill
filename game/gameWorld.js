@@ -13,6 +13,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     this.game = game;
     this.gameTimeLimit = gameTimeLimit;
     this.timeLeft = this.gameTimeLimit;
+    this.timeTotal = 0;
     this.isGameOver = false;
 
     this.projectileList = [];
@@ -110,9 +111,9 @@ var world = module.exports = function (game, players, gameTimeLimit) {
             y = this.randIntBetween(pad, this.worldHeight - pad);
             angle = 0;
         }
-        var randCelebIdx = this.randInt(gameObjectHandler.celebs.length);
-        var celeb = gameObjectHandler.celebs[randCelebIdx];
-        player.init(x, y, angle, celeb);
+        var randBugIndex = this.randInt(gameObjectHandler.bugs.length);
+        var bug = gameObjectHandler.bugs[randBugIndex];
+        player.init(x, y, angle, bug);
         player.setFireDelay(this.defaultFireDelay);
     };
 
@@ -125,8 +126,8 @@ var world = module.exports = function (game, players, gameTimeLimit) {
 
     this.playerHit = function (player) {
         if (player.isKing) {
-            player.netWorth -= this.hitTax;
-            if (player.netWorth <= 0) {
+            player.health -= this.hitTax;
+            if (player.health <= 0) {
                 this.kingKilled();
             }
         } else {
@@ -222,6 +223,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         }
 
         this.timeLeft -= dt;
+        this.timeTotal += dt;
 
         if (this.timeLeft <= 0) {
             this.gameOver();
@@ -253,8 +255,8 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         }
         obj.kingData = this.king === null ? null : {
             name: this.king.name,
-            celebName: this.king.celeb.name,
-            netWorth: this.king.netWorth,
+            bugName: this.king.bug.name,
+            health: this.king.health,
             kingTime: this.king.kingTime
         };
         var topKing;
@@ -269,9 +271,9 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         }
         obj.topKing = topKing === undefined ? null : {
             name: topKing.name,
-            netWorth: topKing.netWorth,
+            health: topKing.health,
             kingTime: topKing.kingTime,
-            celebName: topKing.celeb.name
+            bugName: topKing.bug.name
         };
         obj.gameTimeLeft = this.timeLeft;
 
@@ -325,7 +327,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         var comps = [];
         var comp;
         for (var x = this.worldWidth/2-xMax/2; x <= this.worldWidth/2+xMax/2; x += grid.width) {
-            for (var y = this.worldHeight/2-yMax/2; y <= this.worldHeight/2+yMax/2; y += grid.height) {
+            for (var y = this.worldHeight/2-yMax/2; y <= this.worldHeight/2+yMax/2; y += grid.height.height) {
                 comp = new GameComponent();
                 comp.id = grid.id;
                 comp.x = x;
@@ -347,7 +349,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         comp.y = player.y;
         comp.a = player.a;
         comp.isObj = true;
-        comp.id = player.celeb.id;
+        comp.id = player.getCurrentSprite().id;
         comp.playerName = player.name;
         comp.font = this.font;
         return comp;
@@ -423,6 +425,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     this.newGame = function () {
         this.initPlayersNewGame();
         this.timeLeft = this.gameTimeLimit;
+        this.timeTotal = 0;
         this.king = null;
         this.isGameOver = false;
     };

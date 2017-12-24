@@ -73,8 +73,8 @@ game.sendNextFrame = function () {
             if (p.isOnline())
                 dataObj.players.push({
                     name: p.name,
-                    netWorth: p.netWorth,
-                    celebName: p.celeb.name,
+                    health: p.health,
+                    bugName: p.bug.name,
                     kingTime: p.kingTime,
                     x: p.x, y: p.y, angle: p.a});
         }

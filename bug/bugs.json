@@ -1,0 +1,15 @@
+{
+  "bugs": [
+    {
+      "name": "ant",
+      "speed": 300,
+      "health": 200,
+      "sprites": [
+        "ant_1.png",
+        "ant_2.png",
+        "ant_3.png",
+        "ant_4.png"
+      ]
+    }
+  ]
+}

@@ -105,7 +105,7 @@ function startGame() {
     };
 
     myGameArea.start();
-    var currentPlayerInfoDiv = $('<div style="position:absolute;top:30px;left:30px"><h2 id="info-celeb-name"></h2><br><h3 id="info-celeb-worth"></h3><br><h3 id="ifno-celeb-time"></h3></div>');
+    var currentPlayerInfoDiv = $('<div style="position:absolute;top:30px;left:30px"><h2 id="info-bug-name"></h2><br><h3 id="info-bug-worth"></h3><br><h3 id="ifno-bug-time"></h3></div>');
     var kingInfoDiv = $('<div style="position:absolute;left:calc(100% - 200px);top:30px"><h2 id="info-king-name"></h2><br><h3 id="info-king-worth"></h3><br><h3 id="info-king-time"></h3></div>');
     var positionInfoDiv = $('<div style="position:absolute;left:30px;top:calc(100% - 200px);"><h4 id="pos-info"></h4></div>');
     var timeInfoDiv = $('<div style="position:absolute;top:30px;left:calc(50% - 100px);width:200px;text-align:center;"><h2 id="time-info"></h2></div>"');
@@ -126,9 +126,9 @@ function updateGameArea(data) {
     for (i = 0; i < players.length; i++) {
         if (players[i].name === myName) {you = players[i];break;}
     }
-    $('#info-celeb-name').text(you.celebName);
-    $('#info-celeb-worth').text('$' + you.netWorth + ' MIL net worth');
-    $('#info-celeb-time').text(Math.ceil(you.kingTime/1000) + ' seconds king');
+    $('#info-bug-name').text(you.bugName);
+    $('#info-bug-worth').text(you.health + ' health');
+    $('#info-bug-time').text(Math.ceil(you.kingTime/1000) + ' seconds king');
 
 
     $('#time-info').html("Time Left<br>" + Math.ceil(data.gameTimeLeft/1000));
@@ -146,7 +146,7 @@ function updateGameArea(data) {
 
     if (kingData !== null) {
         $('#info-king-name').text(kingData.name + " is king!");
-        $('#info-king-worth').text('$' + kingData.netWorth + ' MIL net worth');
+        $('#info-king-worth').text(kingData.health + ' health');
         $('#info-king-time').text(Math.ceil(kingData.kingTime/1000) + ' seconds');
     } else {
         $('#info-king-name').text('Hill Open');
