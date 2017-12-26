@@ -43,6 +43,10 @@ game.playerJoin = function (name, ws) {
     return true;
 };
 
+game.playerLeave = function (player) {
+    this.gameWorld.playerLeave(player);
+};
+
 game.playerInGame = function (name) {
     return this.playerHandler.hasPlayer(name);
 };
@@ -74,6 +78,7 @@ game.sendNextFrame = function () {
                 dataObj.players.push({
                     name: p.name,
                     health: p.health,
+                    maxHealth: p.maxHealth,
                     bugName: p.bug.name,
                     kingTime: p.kingTime,
                     x: p.x, y: p.y, angle: p.a});
@@ -97,7 +102,10 @@ game.broadcastMessage = function (data) {
     for (var i = 0; i < players.length; i++) {
         if (players[i].isOnline()) {
             players[i].ws.send(data);
-        } else players.splice(i--, 1);
+        } else {
+            this.playerLeave(players[i]);
+            players.splice(i--, 1);
+        }
     }
     this.broadcastToAdmins(data);
 };

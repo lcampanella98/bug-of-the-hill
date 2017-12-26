@@ -15,6 +15,7 @@ o.Player = function (name, ws) {
         this.angularSpeed = 2.0;
         this.bug = bug;
         this.health = bug.health;
+        this.maxHealth = this.health;
         this.curSpriteIndex = 0;
         this.curSpriteTime = 0;
         this.timePerSprite = 100;
@@ -23,6 +24,10 @@ o.Player = function (name, ws) {
         this.input = {"l":false,"r":false,"u":false,"d":false,"s":false};
         this.timeUntilNextFire = 0;
         this.fireDelay = 300;
+        this.width = this.getCurrentSprite().width;
+        this.height = this.getCurrentSprite().height;
+        console.log(this.width);
+        console.log(this.height);
     };
 
     this.setFireDelay = function (fireDelayMs) {

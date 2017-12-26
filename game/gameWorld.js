@@ -89,6 +89,12 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         return Math.floor(Math.random() * (ceil - floor) + floor);
     };
 
+    this.playerLeave = function (player) {
+        if (player.isKing) {
+            this.kingKilled();
+        }
+    };
+
     this.initPlayer = function (player) {
         player.gameWorld = this;
         var side = this.randInt(4);
@@ -125,6 +131,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     };
 
     this.playerHit = function (player) {
+        console.log('player hit');
         if (player.isKing) {
             player.health -= this.hitTax;
             if (player.health <= 0) {
@@ -179,21 +186,20 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     this.updateWorld = function (dt) {
         if (this.isGameOver) return;
 
-        var i;
         // step 1 update projectiles
-        for (i = 0; i < this.projectileList.length; i++) {
+        for (let i = 0; i < this.projectileList.length; i++) {
             this.projectileList[i].update(dt);
             if (this.projectileList[i].finished) this.projectileList.splice(i--, 1);
         }
         // step 2 check projectile collisions with players
-        var p;
-        for (i = 0; i < this.playersList.length; i++) {
-            p = this.playersList[i];
+        for (let i = 0; i < this.playersList.length; i++) {
+            let p = this.playersList[i];
             if (!p.isOnline()) {
+                this.playerLeave(p);
                 this.playersList.splice(i--, 1);
                 continue;
             }
-            for (var j = 0; j < this.projectileList.length; j++) {
+            for (let j = 0; j < this.projectileList.length; j++) {
                 if (this.projCollidingWithPlayer(this.projectileList[j], p)) {
                     this.playerHit(p);
                     this.projectileList.splice(j--, 1);
@@ -203,14 +209,14 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         // step 3 process all input
 
         for (i = 0; i < this.playersList.length; i++) {
-            p = this.playersList[i];
+            let p = this.playersList[i];
             p.update(dt);
         }
         // step 4 check for new king
         if (this.king === null) {
             var minDist = 2147483647, newKing = null, dist;
-            for (i = 0; i < this.playersList.length; i++) {
-                p = this.playersList[i];
+            for (let i = 0; i < this.playersList.length; i++) {
+                let p = this.playersList[i];
                 dist = this.hill.distFromKingCenter(p);
                 if (dist >= 0 && dist < minDist) {
                     minDist = dist;
@@ -233,24 +239,22 @@ var world = module.exports = function (game, players, gameTimeLimit) {
 
 
     this.generateDataObject = function () {
-        var obj = {};
+        let obj = {};
         obj.components = [];
-        var i;
-        for (i = 0; i < this.backgroundComponents.length; i++) {
+        for (let i = 0; i < this.backgroundComponents.length; i++) {
             obj.components.push(this.backgroundComponents[i]);
         }
-        for (i = 0; i < this.boundaryRects.length; i++) {
+        for (let i = 0; i < this.boundaryRects.length; i++) {
             obj.components.push(this.boundaryRects[i]);
         }
         obj.components.push(this.genTurretComponent(this.turretFront));
         obj.components.push(this.genTurretComponent(this.turretRear));
         obj.components.push(this.genHillComponent(this.hill));
-        var p;
-        for (i = 0; i < this.playersList.length; i++) {
-            p = this.playersList[i];
+        for (let i = 0; i < this.playersList.length; i++) {
+            let p = this.playersList[i];
             obj.components.push(this.genPlayerComponent(p));
         }
-        for (i = 0; i < this.projectileList.length; i++) {
+        for (let i = 0; i < this.projectileList.length; i++) {
             obj.components.push(this.genProjectileComponent(this.projectileList[i]));
         }
         obj.kingData = this.king === null ? null : {
@@ -261,9 +265,8 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         };
         var topKing;
         var topTime;
-        var p;
-        for (i = 0; i < this.playersList.length; i++) {
-            p = this.playersList[i];
+        for (let i = 0; i < this.playersList.length; i++) {
+            let p = this.playersList[i];
             if (p.kingTime > 0 && (topTime === undefined || p.kingTime > topTime)) {
                 topKing = p;
                 topTime = p.kingTime;
@@ -322,12 +325,12 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     this.boundaryRects = this.genBoundryRects();
 
     this.genBackgroundComponents = function () {
-        var xMax = this.worldWidth + 3000, yMax = this.worldHeight + 3000;
-        var grid = gameObjectHandler.bgGrid;
-        var comps = [];
-        var comp;
-        for (var x = this.worldWidth/2-xMax/2; x <= this.worldWidth/2+xMax/2; x += grid.width) {
-            for (var y = this.worldHeight/2-yMax/2; y <= this.worldHeight/2+yMax/2; y += grid.height.height) {
+        let xMax = this.worldWidth + 3000, yMax = this.worldHeight + 3000;
+        let grid = gameObjectHandler.bgGrid;
+        let comps = [];
+        let comp;
+        for (let x = this.worldWidth/2-xMax/2; x <= this.worldWidth/2+xMax/2; x += grid.width) {
+            for (let y = this.worldHeight/2-yMax/2; y <= this.worldHeight/2+yMax/2; y += grid.height) {
                 comp = new GameComponent();
                 comp.id = grid.id;
                 comp.x = x;

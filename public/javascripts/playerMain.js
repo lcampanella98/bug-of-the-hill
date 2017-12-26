@@ -105,8 +105,8 @@ function startGame() {
     };
 
     myGameArea.start();
-    var currentPlayerInfoDiv = $('<div style="position:absolute;top:30px;left:30px"><h2 id="info-bug-name"></h2><br><h3 id="info-bug-worth"></h3><br><h3 id="ifno-bug-time"></h3></div>');
-    var kingInfoDiv = $('<div style="position:absolute;left:calc(100% - 200px);top:30px"><h2 id="info-king-name"></h2><br><h3 id="info-king-worth"></h3><br><h3 id="info-king-time"></h3></div>');
+    var currentPlayerInfoDiv = $('<div style="position:absolute;top:30px;left:30px"><h2 id="info-bug-name"></h2><br><h3 id="info-bug-time"></h3></div>');
+    var kingInfoDiv = $('<div style="position:absolute;left:calc(100% - 200px);top:30px"><h2 id="info-king-name"></h2><br><h3 id="info-king-time"></h3></div>');
     var positionInfoDiv = $('<div style="position:absolute;left:30px;top:calc(100% - 200px);"><h4 id="pos-info"></h4></div>');
     var timeInfoDiv = $('<div style="position:absolute;top:30px;left:calc(50% - 100px);width:200px;text-align:center;"><h2 id="time-info"></h2></div>"');
     var topKingDiv = $('<div style="position:absolute;top:200px;left:calc(50% - 200px);width:400px;text-align:center;"><h1 id="top-king-info"></h1></div>');
@@ -117,63 +117,50 @@ function startGame() {
     body.append(timeInfoDiv);
 }
 
+
+function renderHealthBar(ctx, maxHealth, curHealth, x, y) {
+    let w = 150, h = 20, sW = 5;
+    let tx = x+w/2,ty = y+h/2;
+    ctx.translate(tx, ty);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = sW;
+    ctx.strokeRect(-w/2,-h/2,w,h);
+    let hRatio = curHealth / maxHealth;
+    ctx.fillStyle = hRatio < .25 ? 'red' : hRatio < .6 ? 'yellow' : 'green';
+    ctx.fillRect(-w/2,-h/2,w,h);
+    ctx.translate(-tx, -ty);
+}
+
+
 function updateGameArea(data) {
-    var components = data.components;
-    var kingData = data.kingData;
-    var players = data.players;
-    var you;
-    var i;
-    for (i = 0; i < players.length; i++) {
+    let components = data.components;
+    let kingData = data.kingData;
+    let players = data.players;
+    let you;
+    for (let i = 0; i < players.length; i++) {
         if (players[i].name === myName) {you = players[i];break;}
     }
-    $('#info-bug-name').text(you.bugName);
-    $('#info-bug-worth').text(you.health + ' health');
-    $('#info-bug-time').text(Math.ceil(you.kingTime/1000) + ' seconds king');
 
+    let cW = myGameArea.canvas.width, cH = myGameArea.canvas.height;
+    let cHW = cW / 2, cHH = cH / 2;
+    let dist = Math.sqrt(cHW * cHW + cHH * cHH);
+    let beta = Math.atan(cHW/cHH);
 
-    $('#time-info').html("Time Left<br>" + Math.ceil(data.gameTimeLeft/1000));
+    let rp = [you.x, you.y];
+    let theta = beta + you.angle;
+    let x0 = [dist * Math.cos(theta), dist * Math.sin(theta)];
+    let r0 = [rp[0]+x0[0],rp[1]+x0[1]];
+    let u = [Math.cos(you.angle - Math.PI / 2), Math.sin(you.angle - Math.PI / 2)];
+    let v = [Math.cos(you.angle - Math.PI), Math.sin(you.angle - Math.PI)];
+    let B = [u, v];
+    let Binv = getInv2x2(B);
 
-    if (data.gameTimeLeft <= 0) {
-        var topKing = data.topKing;
-        var msg;
-        if (topKing)
-            msg = 'Round Winner:' + topKing.name + '<br>' + Math.ceil(topKing.kingTime/1000) + " seconds";
-        else msg = 'No Winner';
-        $('#top-king-info').html(msg);
-    } else {
-        $("#top-king-info").html("");
-    }
-
-    if (kingData !== null) {
-        $('#info-king-name').text(kingData.name + " is king!");
-        $('#info-king-worth').text(kingData.health + ' health');
-        $('#info-king-time').text(Math.ceil(kingData.kingTime/1000) + ' seconds');
-    } else {
-        $('#info-king-name').text('Hill Open');
-        $('#info-king-worth').text('');
-        $('#info-king-time').text('');
-    }
-
-    var cW = myGameArea.canvas.width, cH = myGameArea.canvas.height;
-    var cHW = cW / 2, cHH = cH / 2;
-    var dist = Math.sqrt(cHW * cHW + cHH * cHH);
-    var beta = Math.atan(cHW/cHH);
-
-    var rp = [you.x, you.y];
-    var theta = beta + you.angle;
-    var x0 = [dist * Math.cos(theta), dist * Math.sin(theta)];
-    var r0 = [rp[0]+x0[0],rp[1]+x0[1]];
-    var u = [Math.cos(you.angle - Math.PI / 2), Math.sin(you.angle - Math.PI / 2)];
-    var v = [Math.cos(you.angle - Math.PI), Math.sin(you.angle - Math.PI)];
-    var B = [u, v];
-    var Binv = getInv2x2(B);
-
-    var comp;
+    let comp;
     myGameArea.clear();
-    var ctx = myGameArea.context;
-    var oldFillStyle, oldStrokeStyle;
-    var x, xB, w, h, a, color, obj, r;
-    for (i = 0; i < components.length; i++) {
+    let ctx = myGameArea.context;
+    let oldFillStyle, oldStrokeStyle;
+    let x, xB, w, h, a, color, obj, r;
+    for (let i = 0; i < components.length; i++) {
         comp = components[i];
         x = [comp.x - r0[0], comp.y - r0[1]];
         xB = mulMatrixVector(Binv, x);
@@ -188,12 +175,11 @@ function updateGameArea(data) {
         if (comp.isObj) {
             obj = getGameObject(comp.id);
             if (obj !== null) {
-                var img = document.getElementById('object-'+comp.id);
+                let img = document.getElementById('object-'+comp.id);
                 w = img.width;
                 h = img.height;
                 ctx.drawImage(img, -w/2,-h/2,w,h);
                 if (comp.playerName !== undefined) {
-                    //console.log(comp.playerName);
                     ctx.rotate(-a);
                     ctx.font = comp.font;
                     ctx.fillStyle = comp.fillStyle;
@@ -233,6 +219,40 @@ function updateGameArea(data) {
         }
         ctx.rotate(-a);//-(2 * Math.PI - a));
         ctx.translate(-xB[0],-xB[1]);
+    }
+
+
+    $('#info-bug-name').text(you.bugName);
+    // $('#info-bug-worth').text(you.health + ' health');
+    let infoElement = $('#info-bug-time');
+    infoElement.text(Math.ceil(you.kingTime/1000) + ' seconds king');
+    renderHealthBar(ctx, you.maxHealth, you.health, infoElement.offset().left, infoElement.offset().top + 50);
+
+
+    $('#time-info').html("Time Left<br>" + Math.ceil(data.gameTimeLeft/1000));
+
+    if (data.gameTimeLeft <= 0) {
+        let topKing = data.topKing;
+        let msg;
+        if (topKing)
+            msg = 'Round Winner:' + topKing.name + '<br>' + Math.ceil(topKing.kingTime/1000) + " seconds";
+        else msg = 'No Winner';
+        $('#top-king-info').html(msg);
+    } else {
+        $("#top-king-info").html("");
+    }
+
+    if (kingData !== null) {
+        $('#info-king-name').text(kingData.name + " is king!");
+        // $('#info-king-worth').text(kingData.health + ' health');
+        infoElement = $('#info-king-time');
+        infoElement.text(Math.ceil(kingData.kingTime/1000) + ' seconds');
+        renderHealthBar(ctx, you.maxHealth, you.health, infoElement.offset().left, infoElement.offset().top + 50);
+
+    } else {
+        $('#info-king-name').text('Hill Open');
+        // $('#info-king-worth').text('');
+        $('#info-king-time').text('');
     }
 }
 
@@ -288,15 +308,22 @@ function sendInput(socket) {
     socket.send(JSON.stringify(data));
 }
 
+let useArrowKeys = true;
+let useWASD = true;
+
 function addKeyListener(socket) {
     document.addEventListener('keydown', function(event) {
-        if(event.keyCode === 37) { // left
+        if((useArrowKeys && event.keyCode === 37)
+            || (useWASD && event.keyCode === 65)) { // left
             keyInput['l'] = true;
-        } else if (event.keyCode === 38) { // up
+        } else if ((useArrowKeys && event.keyCode === 38)
+            || (useWASD && event.keyCode === 87)) { // up
             keyInput['u'] = true;
-        } else if(event.keyCode === 39) { // right
+        } else if((useArrowKeys && event.keyCode === 39)
+            || (useWASD && event.keyCode === 68)) { // right
             keyInput['r'] = true;
-        } else if (event.keyCode === 40) { // down
+        } else if ((useArrowKeys && event.keyCode === 40)
+            || (useWASD && event.keyCode === 83)) { // down
             keyInput['d'] = true;
         } else if (event.keyCode === 32) {
             keyInput['s'] = true;
@@ -304,13 +331,17 @@ function addKeyListener(socket) {
         sendInput(socket);
     });
     document.addEventListener('keyup', function(event) {
-        if(event.keyCode === 37) { // left
+        if((useArrowKeys && event.keyCode === 37)
+            || (useWASD && event.keyCode === 65)) { // left
             keyInput['l'] = false;
-        } else if (event.keyCode === 38) { // up
+        } else if ((useArrowKeys && event.keyCode === 38)
+            || (useWASD && event.keyCode === 87)) { // up
             keyInput['u'] = false;
-        } else if(event.keyCode === 39) { // right
+        } else if((useArrowKeys && event.keyCode === 39)
+            || (useWASD && event.keyCode === 68)) { // right
             keyInput['r'] = false;
-        } else if (event.keyCode === 40) { // down
+        } else if ((useArrowKeys && event.keyCode === 40)
+            || (useWASD && event.keyCode === 83)) { // down
             keyInput['d'] = false;
         } else if (event.keyCode === 32) {
             keyInput['s'] = false;
