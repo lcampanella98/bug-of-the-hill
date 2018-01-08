@@ -1,5 +1,5 @@
 var gameObjectHandler = require('./gameObjectHandler');
-
+var mathtools = require('./mathtools');
 var o = module.exports = {};
 
 o.Player = function (name, ws) {
@@ -108,8 +108,10 @@ o.Player = function (name, ws) {
         // check hill
         // player cannot move inside hill unless it is empty
         if (this.gameWorld.king !== null && this.gameWorld.hill.isInsideHill(this)) {
-            newDx = 0;
-            newDy = 0;
+            let hillTangent = mathtools.getPerpendicularVector(this.x - this.gameWorld.hill.x, this.y - this.gameWorld.hill.y);
+            let proj = mathtools.getProjection(dx, dy, hillTangent[0], hillTangent[1]);
+            newDx = proj[0];
+            newDy = proj[1];
         }
         return [newDx, newDy];
     };
