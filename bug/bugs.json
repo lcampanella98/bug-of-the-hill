@@ -2,7 +2,7 @@
   "bugs": [
     {
       "name": "ant",
-      "speed": 300,
+      "speed": 250,
       "health": 200,
       "sprites": [
         "ant_1.png",

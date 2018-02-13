@@ -16,7 +16,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
 
     this.projectileList = [];
     this.king = null;
-    this.hitTax = 8; // update this value
+    this.hitTax = 20; // update this value
     this.worldWidth = 2000;
     this.worldHeight = 2000;
     this.playersList = players;
@@ -128,7 +128,6 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     };
 
     this.playerHit = function (player) {
-        console.log('player hit');
         if (player.isKing) {
             player.health -= this.hitTax;
             if (player.health <= 0) {
@@ -181,36 +180,41 @@ var world = module.exports = function (game, players, gameTimeLimit) {
 
     this.updateWorld = function (dt) {
         if (this.isGameOver) return;
-
+        // step 0 remove absent players
+        for (let i = 0; i < this.playersList.length; ++i) {
+            let p = this.playersList[i];
+            if (!p.isOnline()) {
+                this.playerLeave(p);
+                this.playersList.splice(i--, 1);
+            }
+        }
         // step 1 update projectiles
         for (let i = 0; i < this.projectileList.length; i++) {
             this.projectileList[i].update(dt);
             if (this.projectileList[i].finished) this.projectileList.splice(i--, 1);
         }
         // step 2 check projectile collisions with players
-        for (let i = 0; i < this.playersList.length; i++) {
-            let p = this.playersList[i];
-            if (!p.isOnline()) {
-                this.playerLeave(p);
-                this.playersList.splice(i--, 1);
-                continue;
-            }
-            for (let j = 0; j < this.projectileList.length; j++) {
-                if (this.projCollidingWithPlayer(this.projectileList[j], p)) {
-                    this.playerHit(p);
+        let proj, player;
+        for (let i = 0; i < this.projectileList.length; i++) {
+            proj = this.projectileList[i];
+            for (let j = 0; j < this.playersList.length; j++) {
+                player = this.playersList[j];
+                if (this.projCollidingWithPlayer(proj, player)) {
+                    this.playerHit(player);
                     this.projectileList.splice(j--, 1);
                 }
             }
+
         }
         // step 3 process all input
-
         for (let i = 0; i < this.playersList.length; i++) {
             let p = this.playersList[i];
             p.update(dt);
         }
+
         // step 4 check for new king
         if (this.king === null) {
-            var minDist = 2147483647, newKing = null, dist;
+            let minDist = 2147483647, newKing = null, dist;
             for (let i = 0; i < this.playersList.length; i++) {
                 let p = this.playersList[i];
                 dist = this.hill.distFromKingCenter(p);
@@ -239,14 +243,14 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     };
 
     this.initPlayersNewGame = function () {
-        for (var i = 0; i< this.playersList.length; i++) {
+        for (let i = 0; i< this.playersList.length; i++) {
             this.initPlayer(this.playersList[i]);
             this.playersList[i].newGame();
         }
     };
 
     this.initPlayers = function () {
-        for (var i = 0; i < this.playersList.length; i++) {
+        for (let i = 0; i < this.playersList.length; i++) {
             this.initPlayer(this.playersList[i]);
         }
     };
@@ -257,6 +261,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         this.timeTotal = 0;
         this.king = null;
         this.isGameOver = false;
+        this.hill.drawProps = this.getHillDrawProps();
     };
 
     this.newGame();

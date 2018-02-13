@@ -78,7 +78,7 @@ for (let i = 0; i < bugs.length; i++) {
         return o;
     });
     bugs[i].sprites = objs.map(function(o) {
-        return {file:o.file,id:o.id};
+        return {file:o.file,id:o.id,width:o.width,height:o.height};
     });
     for (let j = 0; j < objs.length; j++) {
         allGameObjects.push(objs[j]);
