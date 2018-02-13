@@ -264,11 +264,11 @@ var world = module.exports = function (game, players, gameTimeLimit) {
         this.hill.drawProps = this.getHillDrawProps();
     };
 
-    this.newGame();
-
     this.hill = new Hill(this.worldWidth / 2, this.worldHeight / 2, 60, 150, this.getHillDrawProps());
     this.turretFront = new Turret(this.hill.x, this.hill.y, 32, true, null);
     this.turretRear = new Turret(this.hill.x, this.hill.y, 32, false, null);
+
+    this.newGame();
 
 };
 
