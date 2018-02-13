@@ -60,7 +60,7 @@ allGameObjects.push(turret);
 // background grid
 let bgGrid = new GameObject();
 bgGrid.id = idCounter++;
-bgGrid.file = 'otherimg/grid_256.png';
+bgGrid.file = 'otherimg/grid_256_green.png';
 let bgGridDims = sizeOf('public/images/' + bgGrid.file);
 bgGrid.width = bgGridDims.width;
 bgGrid.height = bgGridDims.height;

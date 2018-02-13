@@ -1,6 +1,7 @@
 var game = module.exports = {};
 var PlayerHandler = require("./playerHandler");
 var GameWorld = require("./gameWorld");
+var GameWorldGenerator = require("./gameWorldGenerator");
 
 game.isStarted = false;
 game.initialized = false;
@@ -31,6 +32,7 @@ game.start = function () {
     this.isStarted = true;
     this.gameTimeLimit = 2 * 60 * 1000;
     this.gameWorld = new GameWorld(this, this.playerHandler.players, this.gameTimeLimit);
+    this.gameWorldGenerator = new GameWorldGenerator(this.gameWorld);
     this.broadcastMessage(JSON.stringify({msg:'start'}));
     this.updateWorld();
 };
@@ -67,7 +69,7 @@ game.updateWorld = function () {
 };
 
 game.sendNextFrame = function () {
-    var dataObj = this.gameWorld.dataObject;
+    var dataObj = this.gameWorldGenerator.getDataObject();
     if (dataObj !== null) {
         dataObj.msg = 'gameupdate';
         var players = this.playerHandler.players, p;

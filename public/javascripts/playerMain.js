@@ -6,7 +6,7 @@ $(function() {
     var gameStarted = false;
     var objectsLoaded = false;
 
-    $('#btn-join').on('click', function () {
+    $('#form-join').on('submit', function (e) {
         var name = $('#name').val().trim();
         var addr = 'ws://' + window.location.host + '/play';
         try {
@@ -42,7 +42,7 @@ $(function() {
                     gameStarted = true;
                     addKeyListener(socket);
                     startGame();
-                    console.log('game started');
+                    // console.log('game started');
                 } else if (msg === 'gameover') {
                     // gameOver();
                 }
@@ -59,8 +59,9 @@ $(function() {
 
         socket.onbeforeunload = function (event) {
             socket.close();
-        }
+        };
 
+        e.preventDefault();
     });
 
 });

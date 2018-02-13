@@ -26,8 +26,6 @@ o.Player = function (name, ws) {
         this.fireDelay = 300;
         this.width = this.getCurrentSprite().width;
         this.height = this.getCurrentSprite().height;
-        console.log(this.width);
-        console.log(this.height);
     };
 
     this.setFireDelay = function (fireDelayMs) {
@@ -107,13 +105,24 @@ o.Player = function (name, ws) {
         if (newY < 0 || newY > this.gameWorld.worldHeight) newDy = 0;
         // check hill
         // player cannot move inside hill unless it is empty
-        if (this.gameWorld.king !== null && this.gameWorld.hill.isInsideHill(this)) {
+        if (this.gameWorld.king !== null && this.gameWorld.hill.isInsideHill(this) && this.isMovingTowardHill(newDx, newDy)) {
             let hillTangent = mathtools.getPerpendicularVector(this.x - this.gameWorld.hill.x, this.y - this.gameWorld.hill.y);
-            let proj = mathtools.getProjection(dx, dy, hillTangent[0], hillTangent[1]);
+            let proj = mathtools.getProjection(newDx, newDy, hillTangent[0], hillTangent[1]);
             newDx = proj[0];
             newDy = proj[1];
         }
         return [newDx, newDy];
+    };
+
+    this.isMovingTowardHill = function(dx, dy) {
+        if (dx === 0 || dy === 0) return false;
+        var vHill = [this.gameWorld.hill.x - this.x, this.gameWorld.hill.y - this.y];
+        var vPlayer = [dx, dy];
+        var dot = vHill[0]*vPlayer[0] + vHill[1]*vPlayer[1];
+        var vHillMag = Math.hypot(vHill[0], vHill[1]);
+        var vPlayerMag = Math.hypot(vPlayer[0], vPlayer[1]);
+        var angle = Math.acos(dot / (vHillMag * vPlayerMag));
+        return Math.abs(angle) <= Math.PI / 2;
     };
 
     this.getBoundingBox = function() {

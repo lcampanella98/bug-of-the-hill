@@ -9,8 +9,10 @@
   </head>
   <body>
     <h1 id="title"><%= title %></h1>
-    <input type="text" id="name" placeholder="Enter Your Name" /><br><br>
-    <button type="button" id="btn-join">Join</button>
+    <form id="form-join">
+      <input type="text" id="name" placeholder="Enter Your Name" autocomplete="off" /><br><br>
+      <button type="submit" id="btn-join">Join</button>
+    </form>
     <h3 id="msg"></h3>
   </body>
 </html>
