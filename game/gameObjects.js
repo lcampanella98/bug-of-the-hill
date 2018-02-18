@@ -1,4 +1,4 @@
-var gameObjectHandler = require('./gameObjectHandler');
+var gameObjectHandler = require('./gameImageObjectHandler');
 var mathtools = require('./mathtools');
 var o = module.exports = {};
 
@@ -207,8 +207,8 @@ o.Turret = function (hillX, hillY, radius, isFront, drawProps) {
     this.drawProps = drawProps;
 
     this.angle = isFront ? 0 : Math.PI;
-    this.length = gameObjectHandler.turret.height;
-    this.width = gameObjectHandler.turret.width;
+    this.length = gameObjectHandler.turretImageObj.height;
+    this.width = gameObjectHandler.turretImageObj.width;
     this.hillX = hillX;
     this.hillY = hillY;
     this.radius = radius + this.length / 2;

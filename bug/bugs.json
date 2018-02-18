@@ -1,7 +1,7 @@
 {
   "bugs": [
     {
-      "name": "ant",
+      "type": "ant",
       "speed": 250,
       "health": 200,
       "sprites": [

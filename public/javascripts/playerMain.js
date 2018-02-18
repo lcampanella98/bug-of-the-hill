@@ -120,7 +120,7 @@ function startGame() {
 
 
 function renderHealthBar(ctx, maxHealth, curHealth, x, y) {
-    let w = 150, h = 20, sW = 5;
+    let w = 150, h = 20, sW = 4;
     let tx = x+w/2,ty = y+h/2;
     ctx.translate(tx, ty);
     ctx.strokeStyle = 'black';
@@ -128,7 +128,7 @@ function renderHealthBar(ctx, maxHealth, curHealth, x, y) {
     ctx.strokeRect(-w/2,-h/2,w,h);
     let hRatio = curHealth / maxHealth;
     ctx.fillStyle = hRatio < .25 ? 'red' : hRatio < .6 ? 'yellow' : 'green';
-    ctx.fillRect(-w/2,-h/2,w,h);
+    ctx.fillRect(-(w-sW)/2,-(h-sW)/2,(w-sW)*hRatio,(h-sW));
     ctx.translate(-tx, -ty);
 }
 
@@ -173,7 +173,7 @@ function updateGameArea(data) {
 
         ctx.translate(xB[0],xB[1]);
         ctx.rotate(a);
-        if (comp.isObj) {
+        if (comp.isImageObj) {
             obj = getGameObject(comp.id);
             if (obj !== null) {
                 let img = document.getElementById('object-'+comp.id);
@@ -248,7 +248,8 @@ function updateGameArea(data) {
         // $('#info-king-worth').text(kingData.health + ' health');
         infoElement = $('#info-king-time');
         infoElement.text(Math.ceil(kingData.kingTime/1000) + ' seconds');
-        renderHealthBar(ctx, you.maxHealth, you.health, infoElement.offset().left, infoElement.offset().top + 50);
+        console.log(kingData.health + " / " + kingData.maxHealth);
+        renderHealthBar(ctx, kingData.maxHealth, kingData.health, infoElement.offset().left, infoElement.offset().top + 50);
 
     } else {
         $('#info-king-name').text('Hill Open');
@@ -259,7 +260,7 @@ function updateGameArea(data) {
 
 function shouldRenderComp(v, comp, cWidth, cHeight) {
     var distAway = null;
-    if (comp.isObj) {
+    if (comp.isImageObj) {
         var obj = getGameObject(comp.id);
         distAway = Math.max(obj.width, obj.height);
     } else if (comp.isCircle) {

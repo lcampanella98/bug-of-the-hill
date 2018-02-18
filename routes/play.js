@@ -1,34 +1,36 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
 
-var game = require('../game/game');
-var gameObjectHandler = require('../game/gameObjectHandler');
+const game = require('../game/game');
+const gameImageObjectHandler = require('../game/gameImageObjectHandler');
 
-var sendMsg = function (ws, msg) {
+const sendMsg = function (ws, msg) {
     ws.send(JSON.stringify({msg: msg}));
 };
 
-var validateName = function (name) {
+const validateName = function (name) {
     return name.length > 1;
 };
 
 router.ws('/', function (ws, req) {
     ws.on('message', function(message) {
-        var data = JSON.parse(message);
-        var badMessage = function () {sendMsg(ws, 'badmessage')};
+        const data = JSON.parse(message);
+        const badMessage = function () {sendMsg(ws, 'badmessage')};
         if (!data.hasOwnProperty('msg')) badMessage();
-        var msg = data.msg.toLowerCase();
-        var nameTaken = function () {sendMsg(ws, 'nametaken')};
-        var invalidName = function () {sendMsg(ws, 'nameinvalid')};
-        var success = function () {
-            ws.send(JSON.stringify({msg:'joinsuccess', gameObjects: gameObjectHandler.allGameObjects}));
+
+        const msg = data.msg.toLowerCase();
+        const nameTaken = function () {sendMsg(ws, 'nametaken')};
+        const invalidName = function () {sendMsg(ws, 'nameinvalid')};
+        const success = function () {
+            ws.send(JSON.stringify({msg:'joinsuccess', gameObjects: gameImageObjectHandler.allGameObjectsById}));
         };
+
         if (game.initialized) {
             if (msg === 'join') { // player join
                 if (!data.hasOwnProperty('name') || !validateName(data.name)) invalidName();
                 else {
-                    var result = game.playerJoin(data.name, ws);
-                    if (result) {
+                    const joinResult = game.playerJoin(data.name, ws);
+                    if (joinResult) {
                         success();
                         if (game.isStarted) sendMsg(ws, 'start');
                     }

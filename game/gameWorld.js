@@ -4,7 +4,7 @@ var Projectile = gameObjects.Projectile;
 var Turret = gameObjects.Turret;
 var Hill = gameObjects.Hill;
 
-var gameObjectHandler = require('./gameObjectHandler');
+var gameObjectHandler = require('./gameImageObjectHandler');
 
 
 var world = module.exports = function (game, players, gameTimeLimit) {
@@ -16,7 +16,7 @@ var world = module.exports = function (game, players, gameTimeLimit) {
 
     this.projectileList = [];
     this.king = null;
-    this.hitTax = 20; // update this value
+    this.hitTax = 10; // update this value
     this.worldWidth = 2000;
     this.worldHeight = 2000;
     this.playersList = players;
@@ -128,13 +128,10 @@ var world = module.exports = function (game, players, gameTimeLimit) {
     };
 
     this.playerHit = function (player) {
-        if (player.isKing) {
-            player.health -= this.hitTax;
-            if (player.health <= 0) {
-                this.kingKilled();
-            }
-        } else {
-            this.initPlayer(player);
+        player.health -= this.hitTax;
+        if (player.health <= 0) {
+            if (player.isKing) this.kingKilled();
+            else this.initPlayer(player);
         }
     };
 
@@ -201,7 +198,8 @@ var world = module.exports = function (game, players, gameTimeLimit) {
                 player = this.playersList[j];
                 if (this.projCollidingWithPlayer(proj, player)) {
                     this.playerHit(player);
-                    this.projectileList.splice(j--, 1);
+                    this.projectileList.splice(i--, 1);
+                    break;
                 }
             }
 

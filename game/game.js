@@ -1,26 +1,27 @@
-var game = module.exports = {};
-var PlayerHandler = require("./playerHandler");
-var GameWorld = require("./gameWorld");
-var GameWorldGenerator = require("./gameWorldGenerator");
+const game = module.exports = {};
+const PlayerHandler = require("./playerHandler");
+const GameWorld = require("./gameWorld");
+const GameWorldGenerator = require("./gameWorldGenerator");
+
+const MSG = {};
+game.MSG = MSG;
+
+MSG.PLAYERJOIN = 'playerjoin';
+MSG.GAMEUPDATE = 'gameupdate';
+MSG.START = 'start';
 
 game.isStarted = false;
 game.initialized = false;
 
-var Admin = function(ws) {
+game.admins = [];
+
+const Admin = function(ws) {
     this.ws = ws;
     this.isOnline = function () {
         return this.ws.readyState === 1;
     }
 };
 
-game.admins = [];
-
-game.adminJoin = function(ws) {
-    game.admins.push(new Admin(ws));
-    for (var i = 0; i < this.playerHandler.players.length; i++) {
-        ws.send(JSON.stringify({msg:'playerjoin', name:this.playerHandler.players[i]}));
-    }
-};
 
 game.init = function () {
     this.playerHandler = new PlayerHandler();
@@ -28,20 +29,27 @@ game.init = function () {
     this.initialized = true;
 };
 
+game.adminJoin = function(ws) {
+    game.admins.push(new Admin(ws));
+    for (let i = 0; i < this.playerHandler.players.length; i++) {
+        ws.send(JSON.stringify({msg: MSG.PLAYERJOIN, name:this.playerHandler.players[i]}));
+    }
+};
+
 game.start = function () {
     this.isStarted = true;
     this.gameTimeLimit = 2 * 60 * 1000;
     this.gameWorld = new GameWorld(this, this.playerHandler.players, this.gameTimeLimit);
     this.gameWorldGenerator = new GameWorldGenerator(this.gameWorld);
-    this.broadcastMessage(JSON.stringify({msg:'start'}));
+    this.broadcastMessage(JSON.stringify({msg: MSG.START}));
     this.updateWorld();
 };
 
 game.playerJoin = function (name, ws) {
     if (this.playerHandler.hasPlayer(name)) return false;
-    var newPlayer = this.playerHandler.addPlayer(name, ws);
+    let newPlayer = this.playerHandler.addPlayer(name, ws);
     if (this.isStarted) this.gameWorld.initPlayer(newPlayer);
-    this.broadcastToAdmins(JSON.stringify({msg:'playerjoin', name:name}));
+    this.broadcastToAdmins(JSON.stringify({msg:MSG.PLAYERJOIN, name:name}));
     return true;
 };
 
@@ -60,21 +68,22 @@ game.playerInput = function (name, input) {
 game.MS_PER_FRAME = 1000 / 60;
 
 game.updateWorld = function () {
-    var now = Date.now();
+    const now = Date.now();
     this.gameWorld.updateWorld(this.MS_PER_FRAME);
     this.sendNextFrame();
-    var elapsed = Date.now() - now;
-    var self = this;
+    const elapsed = Date.now() - now;
+    const self = this;
     setTimeout(function() {self.updateWorld();}, this.MS_PER_FRAME - elapsed);
 };
 
 game.sendNextFrame = function () {
-    var dataObj = this.gameWorldGenerator.getDataObject();
+    const dataObj = this.gameWorldGenerator.getDataObject();
     if (dataObj !== null) {
-        dataObj.msg = 'gameupdate';
-        var players = this.playerHandler.players, p;
+        dataObj.msg = MSG.GAMEUPDATE;
+        const players = this.playerHandler.players;
+        let p;
         dataObj.players = [];
-        for (var i = 0; i < players.length; i++) {
+        for (let i = 0; i < players.length; i++) {
             p = players[i];
             if (p.isOnline())
                 dataObj.players.push({
@@ -85,13 +94,13 @@ game.sendNextFrame = function () {
                     kingTime: p.kingTime,
                     x: p.x, y: p.y, angle: p.a});
         }
-        var dataStr = JSON.stringify(dataObj);
+        const dataStr = JSON.stringify(dataObj);
         game.broadcastMessage(dataStr);
     }
 };
 
 game.broadcastToAdmins = function (data) {
-    for (var i = 0; i < this.admins.length; i++) {
+    for (let i = 0; i < this.admins.length; i++) {
         if (this.admins[i].isOnline()) {
             this.admins[i].ws.send(data);
         } else this.admins.splice(i--, 1);
@@ -100,8 +109,8 @@ game.broadcastToAdmins = function (data) {
 
 game.broadcastMessage = function (data) {
     // broadcast to players
-    var players = this.playerHandler.players;
-    for (var i = 0; i < players.length; i++) {
+    const players = this.playerHandler.players;
+    for (let i = 0; i < players.length; i++) {
         if (players[i].isOnline()) {
             players[i].ws.send(data);
         } else {

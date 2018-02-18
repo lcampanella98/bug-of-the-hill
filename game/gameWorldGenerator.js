@@ -1,13 +1,13 @@
-var gameObjects = require('./gameObjects');
-var Player = gameObjects.Player;
-var Projectile = gameObjects.Projectile;
-var Turret = gameObjects.Turret;
-var Hill = gameObjects.Hill;
+const gameObjects = require('./gameObjects');
+const Player = gameObjects.Player;
+const Projectile = gameObjects.Projectile;
+const Turret = gameObjects.Turret;
+const Hill = gameObjects.Hill;
 
-var gameObjectHandler = require('./gameObjectHandler');
-var GameComponent = gameObjectHandler.GameComponent;
+const gameObjectHandler = require('./gameImageObjectHandler');
+const DrawableComponent = gameObjectHandler.DrawableComponent;
 
-var gameWorldGenerator = module.exports = function (gameWorld) {
+const gameWorldGenerator = module.exports = function (gameWorld) {
     this.gameWorld = gameWorld;
     this.worldWidth = gameWorld.worldWidth;
     this.worldHeight = gameWorld.worldHeight;
@@ -32,15 +32,16 @@ var gameWorldGenerator = module.exports = function (gameWorld) {
         for (let i = 0; i < this.gameWorld.projectileList.length; i++) {
             obj.components.push(this.genProjectileComponent(this.gameWorld.projectileList[i]));
         }
-        var king = this.gameWorld.king;
+        let king = this.gameWorld.king;
         obj.kingData = king === null ? null : {
             name: king.name,
             bugName: king.bug.name,
             health: king.health,
+            maxHealth: king.maxHealth,
             kingTime: king.kingTime
         };
-        var topKing;
-        var topTime;
+        let topKing;
+        let topTime;
         for (let i = 0; i < this.gameWorld.playersList.length; i++) {
             let p = this.gameWorld.playersList[i];
             if (p.kingTime > 0 && (topTime === undefined || p.kingTime > topTime)) {
@@ -51,6 +52,7 @@ var gameWorldGenerator = module.exports = function (gameWorld) {
         obj.topKing = topKing === undefined ? null : {
             name: topKing.name,
             health: topKing.health,
+            maxHealth: topKing.maxHealth,
             kingTime: topKing.kingTime,
             bugName: topKing.bug.name
         };
@@ -60,10 +62,10 @@ var gameWorldGenerator = module.exports = function (gameWorld) {
     };
 
     this.genBoundryRects = function () {
-        var x, y, w, h, offset = 10;
-        var comps = [];
-        var comp;
-        for (var i = 0; i < 4; i++) {
+        let x, y, w, h, offset = 10;
+        const comps = [];
+        let comp;
+        for (let i = 0; i < 4; i++) {
             if (i === 0) {
                 x = 0;
                 y = this.worldHeight / 2;
@@ -85,7 +87,7 @@ var gameWorldGenerator = module.exports = function (gameWorld) {
                 h = this.worldWidth + offset;
                 w = offset;
             }
-            comp = new GameComponent();
+            comp = new DrawableComponent();
             comp.isRect = true;
             comp.fill = true;
             comp.fillColor = 'black';
@@ -100,17 +102,17 @@ var gameWorldGenerator = module.exports = function (gameWorld) {
 
     this.genBackgroundComponents = function () {
         let xMax = this.worldWidth + 3000, yMax = this.worldHeight + 3000;
-        let grid = gameObjectHandler.bgGrid;
+        let grid = gameObjectHandler.bgGridImageObj;
         let comps = [];
         let comp;
-        for (let x = this.worldWidth/2-xMax/2; x <= this.worldWidth/2+xMax/2; x += grid.width) {
-            for (let y = this.worldHeight/2-yMax/2; y <= this.worldHeight/2+yMax/2; y += grid.height) {
-                comp = new GameComponent();
+        for (let x = this.worldWidth / 2 - xMax / 2; x <= this.worldWidth / 2 + xMax / 2; x += grid.width) {
+            for (let y = this.worldHeight / 2 - yMax / 2; y <= this.worldHeight / 2 + yMax / 2; y += grid.height) {
+                comp = new DrawableComponent();
                 comp.id = grid.id;
                 comp.x = x;
                 comp.y = y;
                 comp.a = 0;
-                comp.isObj = true;
+                comp.isImageObj = true;
                 comps.push(comp);
             }
         }
@@ -118,29 +120,31 @@ var gameWorldGenerator = module.exports = function (gameWorld) {
     };
 
     this.genPlayerComponent = function (player) {
-        var comp = new GameComponent();
+        const comp = new DrawableComponent();
         comp.x = player.x;
         comp.y = player.y;
         comp.a = player.a;
-        comp.isObj = true;
+        comp.isImageObj = true;
         comp.id = player.getCurrentSprite().id;
         comp.playerName = player.name;
+        comp.health = player.health;
+        comp.maxHealth = player.maxHealth;
         comp.font = this.font;
         return comp;
     };
 
     this.genTurretComponent = function (turret) {
-        var comp = new GameComponent();
+        const comp = new DrawableComponent();
         comp.x = turret.x;
         comp.y = turret.y;
         comp.a = turret.angle;
-        comp.isObj = true;
-        comp.id = gameObjectHandler.turret.id;
+        comp.isImageObj = true;
+        comp.id = gameObjectHandler.turretImageObj.id;
         return comp;
     };
 
     this.genProjectileComponent = function (proj) {
-        var comp = new GameComponent();
+        const comp = new DrawableComponent();
         comp.x = proj.x;
         comp.y = proj.y;
         comp.a = proj.a;
@@ -155,7 +159,7 @@ var gameWorldGenerator = module.exports = function (gameWorld) {
     };
 
     this.genHillComponent = function (hill) {
-        var comp = new GameComponent();
+        const comp = new DrawableComponent();
         comp.x = hill.x;
         comp.y = hill.y;
         comp.a = 0;
@@ -168,7 +172,7 @@ var gameWorldGenerator = module.exports = function (gameWorld) {
     };
 
     this.genTextComponent = function (x, y, font, text, color) {
-        var comp = new GameComponent();
+        const comp = new DrawableComponent();
         comp.x = x;
         comp.y = y;
         comp.font = font;
