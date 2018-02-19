@@ -1,5 +1,5 @@
-const Spider = null;
-const Ant = null;
+const Spider = require('./bugSpider');
+const Ant = require('./bugAnt');
 
 module.exports = {
     addToBugPrototype: function (bugTypeName, props) {

@@ -17,11 +17,10 @@ game.admins = [];
 
 const Admin = function(ws) {
     this.ws = ws;
-    this.isOnline = function () {
-        return this.ws.readyState === 1;
-    }
 };
-
+Admin.prototype.isOnline = function () {
+    return this.ws.readyState === 1;
+};
 
 game.init = function () {
     this.playerHandler = new PlayerHandler();
@@ -39,7 +38,7 @@ game.adminJoin = function(ws) {
 game.start = function () {
     this.isStarted = true;
     this.gameTimeLimit = 2 * 60 * 1000;
-    this.gameWorld = new GameWorld(this, this.playerHandler.players, this.gameTimeLimit);
+    this.gameWorld = new GameWorld(this.playerHandler.players, this.gameTimeLimit);
     this.gameWorldGenerator = new GameWorldGenerator(this.gameWorld);
     this.broadcastMessage(JSON.stringify({msg: MSG.START}));
     this.updateWorld();
@@ -48,7 +47,7 @@ game.start = function () {
 game.playerJoin = function (name, ws) {
     if (this.playerHandler.hasPlayer(name)) return false;
     let newPlayer = this.playerHandler.addPlayer(name, ws);
-    if (this.isStarted) this.gameWorld.initPlayer(newPlayer);
+    if (this.isStarted) this.gameWorld.spawnPlayerRandomBug(newPlayer);
     this.broadcastToAdmins(JSON.stringify({msg:MSG.PLAYERJOIN, name:name}));
     return true;
 };
@@ -91,7 +90,7 @@ game.sendNextFrame = function () {
                     health: p.health,
                     maxHealth: p.maxHealth,
                     bugName: p.bug.name,
-                    kingTime: p.kingTime,
+                    timeAsKing: p.timeAsKing,
                     x: p.x, y: p.y, angle: p.a});
         }
         const dataStr = JSON.stringify(dataObj);

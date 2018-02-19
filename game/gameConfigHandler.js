@@ -2,6 +2,10 @@ const bugObj = require('../bug/bugs.json');
 const sizeOf = require('image-size');
 const bugPrototypeFactory = require('./bugs/bugPrototypeFactory');
 
+function imgPathToFullPath(imgPath) {
+    return 'public/images/' + imgPath;
+}
+
 module.exports = {};
 
 module.exports.DrawableComponent = function () {
@@ -29,7 +33,7 @@ module.exports.DrawableComponent = function () {
     this.text = undefined;
 };
 
-module.exports.GameImageObject = function () {
+const GameImageObject = module.exports.GameImageObject = function () {
     // id
     // img file if not bug
     // bug with image file
@@ -38,17 +42,16 @@ module.exports.GameImageObject = function () {
     this.width = undefined;
     this.height = undefined;
 
-    this.appendToDrawableGameComponent = function (drawComp) {
-        drawComp.isImageObj = true;
-        drawComp.id = this.id;
-        drawComp.w = this.width;
-        drawComp.h = this.height;
-    };
+
 };
 
-function imgPathToFullPath(imgPath) {
-    return 'public/images/' + imgPath;
-}
+GameImageObject.prototype.appendToDrawableGameComponent = function (drawComp) {
+    drawComp.isImageObj = true;
+    drawComp.id = this.id;
+    drawComp.w = this.width;
+    drawComp.h = this.height;
+};
+
 
 const arrBugsJSONConfig = bugObj.bugs;
 const allGameImageObjects = [];
@@ -75,9 +78,10 @@ bgGrid.height = bgGridDims.height;
 allGameImageObjects.push(bgGrid);
 
 // bugs
+let bugSprites;
 for (let i = 0; i < arrBugsJSONConfig.length; ++i) {
     // add image objects
-    let bugSprites = arrBugsJSONConfig[i]['sprites'].map(function(sprite) {
+    bugSprites = arrBugsJSONConfig[i]['sprites'].map(function(sprite) {
         const o = {};
         o.file = 'bug/' + sprite;
         const dims = sizeOf(imgPathToFullPath(o.file));
@@ -88,13 +92,12 @@ for (let i = 0; i < arrBugsJSONConfig.length; ++i) {
     });
 
     // add json config to bug prototype
-    const bugConfig = {};
-
     const bugPrototypeObj = {
         JSONConfig: {
             speed: arrBugsJSONConfig[i]['speed'],
             health: arrBugsJSONConfig[i]['health'],
             bugType: arrBugsJSONConfig[i]['type'],
+            damage: arrBugsJSONConfig[i]['damage'],
             sprites: bugSprites
         }
     };
@@ -104,7 +107,7 @@ for (let i = 0; i < arrBugsJSONConfig.length; ++i) {
         allGameImageObjects.push(bugSprites[j]);
     }
 }
-let gameObjIdMap = {};
+const gameObjIdMap = {};
 for (let i = 0; i < allGameImageObjects.length; i++) {
     gameObjIdMap[allGameImageObjects[i].id] = allGameImageObjects[i];
 }

@@ -226,7 +226,7 @@ function updateGameArea(data) {
     $('#info-bug-name').text(you.bugName);
     // $('#info-bug-worth').text(you.health + ' health');
     let infoElement = $('#info-bug-time');
-    infoElement.text(Math.ceil(you.kingTime/1000) + ' seconds king');
+    infoElement.text(Math.ceil(you.timeAsKing/1000) + ' seconds king');
     renderHealthBar(ctx, you.maxHealth, you.health, infoElement.offset().left, infoElement.offset().top + 50);
 
 
@@ -236,7 +236,7 @@ function updateGameArea(data) {
         let topKing = data.topKing;
         let msg;
         if (topKing)
-            msg = 'Round Winner:' + topKing.name + '<br>' + Math.ceil(topKing.kingTime/1000) + " seconds";
+            msg = 'Round Winner:' + topKing.name + '<br>' + Math.ceil(topKing.timeAsKing/1000) + " seconds";
         else msg = 'No Winner';
         $('#top-king-info').html(msg);
     } else {
@@ -247,7 +247,7 @@ function updateGameArea(data) {
         $('#info-king-name').text(kingData.name + " is king!");
         // $('#info-king-worth').text(kingData.health + ' health');
         infoElement = $('#info-king-time');
-        infoElement.text(Math.ceil(kingData.kingTime/1000) + ' seconds');
+        infoElement.text(Math.ceil(kingData.timeAsKing/1000) + ' seconds');
         console.log(kingData.health + " / " + kingData.maxHealth);
         renderHealthBar(ctx, kingData.maxHealth, kingData.health, infoElement.offset().left, infoElement.offset().top + 50);
 

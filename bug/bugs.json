@@ -4,6 +4,8 @@
       "type": "ant",
       "speed": 250,
       "health": 200,
+      "damage": 50,
+      "reloadTime": 500,
       "sprites": [
         "ant_1.png",
         "ant_2.png",

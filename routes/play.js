@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const game = require('../game/game');
-const gameImageObjectHandler = require('../game/gameImageObjectHandler');
+const gameImageObjectHandler = require('../game/gameConfigHandler');
 
 const sendMsg = function (ws, msg) {
     ws.send(JSON.stringify({msg: msg}));
