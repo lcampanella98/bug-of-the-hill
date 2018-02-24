@@ -52,6 +52,23 @@ mathtools.unitVector = function (v) {
 mathtools.scaleVector = function (v, scale) {
     const v2 = new Array(v.length);
     for (let i = 0; i < v2.length; ++i) v2[i] = v[i] * scale;
+    return v2;
+};
+
+mathtools.addVectors = function (v1, v2) {
+    const v3 = new Array(v1.length);
+    for (let i = 0; i < v3.length; ++i) {
+        v3[i] = v1[i] + v2[i];
+    }
+    return v3;
+};
+
+mathtools.randInt = function (ceil) {
+    return Math.floor(Math.random() * ceil);
+};
+
+mathtools.randIntBetween = function (floor, ceil) {
+    return Math.floor(Math.random() * (ceil - floor) + floor);
 };
 
 

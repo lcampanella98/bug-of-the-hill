@@ -3,8 +3,6 @@ const ProjectileAttack = require('../attacks/projectileAttack');
 
 function Ant(player) {
     BugBase.call(this, player);
-
-    this.setAttack(this.getDefaultAttack());
 }
 
 Ant.prototype = Object.create(BugBase.prototype, {
@@ -22,13 +20,15 @@ Ant.prototype = Object.create(BugBase.prototype, {
 
 Ant.prototype.getDefaultAttack = function () {
     const projectileTravelDistance = 280;
-    const projectileTravelSpeed = 300;
+    const projectileTravelSpeed = this.speed * 2;
     const drawProperties = {
         fillColor: 'green',
         radius: 6,
         strokeColor: 'black',
         lineWidth: 2
     };
+
     return new ProjectileAttack(this, this.damage, this.reloadTime, projectileTravelDistance, projectileTravelSpeed, drawProperties);
 };
 
+module.exports = Ant;

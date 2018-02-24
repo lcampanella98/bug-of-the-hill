@@ -7,17 +7,16 @@ function ProjectileAttack (bug, damage, reloadTime, maxTravelDistance, speed, dr
 
     this.damage = damage;
     this.reloadTime = reloadTime;
-    this.timeSinceLastFire = 0;
+    this.timeSinceLastFire = reloadTime + 1;
     this.maxTravelDistance = maxTravelDistance;
 
     this.drawProperties = drawProperties;
 
-    this.magSpeed = speed;
+    this.magSpeed = speed / 1000;
     this.magAcceleration = 0;
 
-    this.arrProjectiles = [];
+    //this.arrProjectiles = [];
 }
-
 ProjectileAttack.prototype = Object.create(Attack.prototype);
 
 ProjectileAttack.prototype.update = function (dt) {
@@ -35,11 +34,13 @@ ProjectileAttack.prototype.canAttack = function () {
 };
 
 ProjectileAttack.prototype.attack = function () {
-    const x0 = [this.bug.x, this.bug.y];
-    this.fireProjectile(x0, this.bug.a);
+    if (this.canAttack()) {
+        this.fireProjectile([this.bug.x, this.bug.y], this.bug.a);
+    }
 };
 
 ProjectileAttack.prototype.fireProjectile = function (x0, angleTrajectoryRadians) {
+
     const dirVector = [Math.cos(angleTrajectoryRadians), Math.sin(angleTrajectoryRadians)];
     const v0 = mathtools.scaleVector(dirVector, this.magSpeed);
     let a;
@@ -55,7 +56,8 @@ ProjectileAttack.prototype.fireProjectile = function (x0, angleTrajectoryRadians
         const normV0Squared = this.magSpeed * this.magSpeed;
         tFinal = (Math.sqrt(normV0Squared * normV0Squared + 2 * this.magAcceleration * this.maxTravelDistance) - normV0Squared) / (2 * this.magAcceleration);
     }
-    this.arrProjectiles.push(new Projectile(x0, v0, a, tFinal, this.drawProperties));
+    // console.log(x0, v0, a, tFinal);
+    this.bug.gameWorld.addProjectile(new Projectile(x0, v0, a, tFinal, this.drawProperties, this.damage, this.bug));
 
     this.timeSinceLastFire = 0;
 };

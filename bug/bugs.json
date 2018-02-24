@@ -12,6 +12,34 @@
         "ant_3.png",
         "ant_4.png"
       ]
+    },
+    {
+      "type": "spider",
+      "speed": 350,
+      "health": 150,
+      "damage": 150,
+      "reloadTime": 1000,
+      "sprites": [
+        "spider_1.png",
+        "spider_2.png",
+        "spider_3.png",
+        "spider_4.png",
+        "spider_5.png",
+        "spider_6.png",
+        "spider_7.png",
+        "spider_8.png",
+        "spider_9.png",
+        "spider_10.png",
+        "spider_11.png",
+        "spider_12.png",
+        "spider_13.png",
+        "spider_14.png",
+        "spider_15.png",
+        "spider_16.png",
+        "spider_17.png",
+        "spider_18.png",
+        "spider_19.png"
+      ]
     }
   ]
 }

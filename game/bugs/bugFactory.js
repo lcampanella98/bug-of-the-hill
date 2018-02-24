@@ -1,0 +1,3 @@
+function BugFactory (bugType, args) {
+
+}

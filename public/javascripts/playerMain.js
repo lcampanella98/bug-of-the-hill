@@ -1,14 +1,14 @@
-var gameObjects;
-var myName;
+let gameObjects;
+let myName;
 
 $(function() {
-    var socket;
-    var gameStarted = false;
-    var objectsLoaded = false;
+    let socket;
+    let gameStarted = false;
+    let objectsLoaded = false;
 
     $('#form-join').on('submit', function (e) {
-        var name = $('#name').val().trim();
-        var addr = 'ws://' + window.location.host + '/play';
+        const name = $('#name').val().trim();
+        const addr = 'ws://' + window.location.host + '/play';
         try {
             socket = new WebSocket(addr);
         } catch (e) {
@@ -19,8 +19,8 @@ $(function() {
         };
 
         socket.onmessage = function (evt) {
-            var data = JSON.parse(evt.data);
-            var msg = data.msg.toLowerCase();
+            const data = JSON.parse(evt.data);
+            const msg = data.msg.toLowerCase();
             if (!gameStarted) {
                 if (msg === 'wait') {
                     $('#msg').text('Please wait for admin to open game');
@@ -66,33 +66,40 @@ $(function() {
 
 });
 
-var myGameArea;
+let myGameArea;
 
-var loadObjectImages = function () {
-    var span = $('<span id="span-object-img" style="display:none"></span>');
-    for (var id in gameObjects) {
+function loadObjectImages () {
+    const span = $('<span id="span-object-img" style="display:none"></span>');
+    for (const id in gameObjects) {
         if (gameObjects.hasOwnProperty(id)) {
-            var obj = gameObjects[id];
-            var file = obj.file;
-            var src = window.location.href + "images/" + file;
+            const obj = gameObjects[id];
+            const file = obj.file;
+            const src = window.location.href + "images/" + file;
             // console.log(src);
-            var img = $('<img id="object-'+obj.id+'" src="'+ src +'" />');
+            const img = $('<img id="object-' + obj.id + '" src="' + src + '" />');
             span.append(img);
         }
     }
     $('body').append(span);
-};
+}
+
+function startPageToGamePage() {
+    const body = $('body');
+    const divStart = $('#start-page-container');
+    const gameContainer = $('#game-container');
+
+    divStart.hide();
+    gameContainer.show();
+    body.css('padding', '0px');
+    body.css('margin', '0px');
+}
 
 function startGame() {
     // remove elements
-    var body = $('body');
-    $.each(body.children(), function() {$(this).hide();});
-    body.css('padding', '0px');
-    body.css('margin', '0px');
-    var width = body.width();
-    var height = window.innerHeight - 100;
-    body.append('<canvas id="cvs" style="position:absolute;top:0;left:0;right:0;bottom:0;width:100%;height:100%;"></canvas>');
-    var cvs = $('#cvs');
+    startPageToGamePage();
+    const cvs = $('#cvs');
+    // console.log(cvs.width());
+    // console.log(cvs.height());
     myGameArea = {
         canvas : cvs.get(0),
         start : function() {
@@ -106,16 +113,6 @@ function startGame() {
     };
 
     myGameArea.start();
-    var currentPlayerInfoDiv = $('<div style="position:absolute;top:30px;left:30px"><h2 id="info-bug-name"></h2><br><h3 id="info-bug-time"></h3></div>');
-    var kingInfoDiv = $('<div style="position:absolute;left:calc(100% - 200px);top:30px"><h2 id="info-king-name"></h2><br><h3 id="info-king-time"></h3></div>');
-    var positionInfoDiv = $('<div style="position:absolute;left:30px;top:calc(100% - 200px);"><h4 id="pos-info"></h4></div>');
-    var timeInfoDiv = $('<div style="position:absolute;top:30px;left:calc(50% - 100px);width:200px;text-align:center;"><h2 id="time-info"></h2></div>"');
-    var topKingDiv = $('<div style="position:absolute;top:200px;left:calc(50% - 200px);width:400px;text-align:center;"><h1 id="top-king-info"></h1></div>');
-    body.append(topKingDiv);
-    body.append(currentPlayerInfoDiv);
-    body.append(kingInfoDiv);
-    body.append(positionInfoDiv);
-    body.append(timeInfoDiv);
 }
 
 
@@ -135,32 +132,34 @@ function renderHealthBar(ctx, maxHealth, curHealth, x, y) {
 
 function updateGameArea(data) {
     let components = data.components;
-    let kingData = data.kingData;
-    let players = data.players;
-    let you;
-    for (let i = 0; i < players.length; i++) {
-        if (players[i].name === myName) {you = players[i];break;}
-    }
+    let kingName = data.kingName;
+    let topKingName = data.topKingName;
+
+    const king = kingName !== null ? data.players[kingName] : null;
+    const topKing = topKingName !== null ? data.players[topKingName] : null;
+    const you = data.players[myName];
 
     let cW = myGameArea.canvas.width, cH = myGameArea.canvas.height;
+    // console.log("width: " + cW);
+    // console.log("height: " + cH);
     let cHW = cW / 2, cHH = cH / 2;
     let dist = Math.sqrt(cHW * cHW + cHH * cHH);
     let beta = Math.atan(cHW/cHH);
 
     let rp = [you.x, you.y];
-    let theta = beta + you.angle;
+    let theta = beta + you.a;
     let x0 = [dist * Math.cos(theta), dist * Math.sin(theta)];
     let r0 = [rp[0]+x0[0],rp[1]+x0[1]];
-    let u = [Math.cos(you.angle - Math.PI / 2), Math.sin(you.angle - Math.PI / 2)];
-    let v = [Math.cos(you.angle - Math.PI), Math.sin(you.angle - Math.PI)];
+    let u = [Math.cos(you.a - Math.PI / 2), Math.sin(you.a - Math.PI / 2)];
+    let v = [Math.cos(you.a - Math.PI), Math.sin(you.a - Math.PI)];
     let B = [u, v];
     let Binv = getInv2x2(B);
 
     let comp;
     myGameArea.clear();
     let ctx = myGameArea.context;
-    let oldFillStyle, oldStrokeStyle;
-    let x, xB, w, h, a, color, obj, r;
+    let x, xB, w, h, a, obj, img, r;
+    let playerTemp;
     for (let i = 0; i < components.length; i++) {
         comp = components[i];
         x = [comp.x - r0[0], comp.y - r0[1]];
@@ -169,22 +168,26 @@ function updateGameArea(data) {
         // check if point is inside bounding box
         if (!shouldRenderComp(xB, comp, cW, cH)) continue;
 
-        a = you.angle - comp.a;
+        a = you.a - comp.a;
 
         ctx.translate(xB[0],xB[1]);
         ctx.rotate(a);
         if (comp.isImageObj) {
             obj = getGameObject(comp.id);
             if (obj !== null) {
-                let img = document.getElementById('object-'+comp.id);
+                img = document.getElementById('object-'+comp.id);
                 w = img.width;
                 h = img.height;
                 ctx.drawImage(img, -w/2,-h/2,w,h);
-                if (comp.playerName !== undefined) {
+                if (comp.isPlayer) {
                     ctx.rotate(-a);
-                    ctx.font = comp.font;
-                    ctx.fillStyle = comp.fillStyle;
-                    ctx.fillText(comp.playerName, -5*comp.playerName.length,-h/2-10);
+                    if (comp.playerName !== myName && comp.playerName !== kingName) { // render text/health bar above player
+                        playerTemp = data.players[comp.playerName];
+
+                        ctx.font = comp.font;
+                        ctx.fillStyle = comp.fillStyle;
+                        ctx.fillText(comp.playerName, -5*comp.playerName.length,-h/2-10);
+                    }
                     ctx.rotate(a);
                 }
             }
@@ -218,50 +221,75 @@ function updateGameArea(data) {
             ctx.fillStyle = comp.fillStyle;
             ctx.fillText(comp.text, xB[0], xB[1]);
         }
-        ctx.rotate(-a);//-(2 * Math.PI - a));
+        ctx.rotate(-a); //-(2 * Math.PI - a));
         ctx.translate(-xB[0],-xB[1]);
     }
+    let newContent;
 
-
-    $('#info-bug-name').text(you.bugName);
-    // $('#info-bug-worth').text(you.health + ' health');
-    let infoElement = $('#info-bug-time');
-    infoElement.text(Math.ceil(you.timeAsKing/1000) + ' seconds king');
-    renderHealthBar(ctx, you.maxHealth, you.health, infoElement.offset().left, infoElement.offset().top + 50);
-
-
-    $('#time-info').html("Time Left<br>" + Math.ceil(data.gameTimeLeft/1000));
-
-    if (data.gameTimeLeft <= 0) {
-        let topKing = data.topKing;
-        let msg;
-        if (topKing)
-            msg = 'Round Winner:' + topKing.name + '<br>' + Math.ceil(topKing.timeAsKing/1000) + " seconds";
-        else msg = 'No Winner';
-        $('#top-king-info').html(msg);
-    } else {
-        $("#top-king-info").html("");
+    let infoBugName = $('#info-bug-name');
+    newContent = you.name;
+    if (infoBugName.text() !== newContent) {
+        infoBugName.text(newContent);
     }
 
-    if (kingData !== null) {
-        $('#info-king-name').text(kingData.name + " is king!");
-        // $('#info-king-worth').text(kingData.health + ' health');
-        infoElement = $('#info-king-time');
-        infoElement.text(Math.ceil(kingData.timeAsKing/1000) + ' seconds');
-        console.log(kingData.health + " / " + kingData.maxHealth);
-        renderHealthBar(ctx, kingData.maxHealth, kingData.health, infoElement.offset().left, infoElement.offset().top + 50);
+    let infoElement = $('#info-bug-time');
+    newContent = Math.ceil(you.timeAsKing / 1000) + ' seconds king';
+    if (infoElement.text() !== newContent) {
+        infoElement.text(newContent);
+    }
+
+    renderHealthBar(ctx, you.maxHealth, you.health, infoElement.offset().left, infoElement.offset().top + 50);
+
+    let timeInfo = $('#time-info');
+    newContent = "Time Left<br>" + Math.ceil(data.gameTimeLeft/1000);
+    if (timeInfo.text() !== newContent) {
+        timeInfo.html(newContent);
+    }
+
+    let infoKingName = $('#info-king-name');
+    let infoKingTime = $('#info-king-time');
+    if (king !== null) {
+        newContent = king.name + " is king!";
+        if (infoKingName.text() !== newContent) {
+            infoKingName.text(newContent);
+        }
+        newContent = Math.ceil(king.timeAsKing / 1000) + ' seconds';
+        if (infoKingTime.text() !== newContent) {
+            infoKingTime.text();
+        }
+        renderHealthBar(ctx, king.maxHealth, king.health, infoKingTime.offset().left, infoKingTime.offset().top + 50);
 
     } else {
-        $('#info-king-name').text('Hill Open');
+        newContent = 'Hill Open';
+        if (infoKingName.text() !== newContent) {
+            infoKingName.text(newContent);
+        }
+
         // $('#info-king-worth').text('');
-        $('#info-king-time').text('');
+        if (infoKingTime.text() !== '') {
+            infoKingTime.text('');
+        }
+    }
+
+    let topKingInfo = $('#top-king-info');
+    if (data.gameTimeLeft <= 0) { // gameOVER
+        let msg;
+        if (topKing !== null)
+            msg = 'Round Winner:' + topKing.name + '<br>' + Math.ceil(topKing.timeAsKing/1000) + " seconds";
+        else msg = 'No Winner';
+
+        topKingInfo.html(msg);
+    } else {
+        if (topKingInfo.html() !== '') {
+            topKingInfo.html('');
+        }
     }
 }
 
 function shouldRenderComp(v, comp, cWidth, cHeight) {
-    var distAway = null;
+    let distAway = null;
     if (comp.isImageObj) {
-        var obj = getGameObject(comp.id);
+        const obj = getGameObject(comp.id);
         distAway = Math.max(obj.width, obj.height);
     } else if (comp.isCircle) {
         distAway = comp.radius;
@@ -275,10 +303,10 @@ function shouldRenderComp(v, comp, cWidth, cHeight) {
 }
 
 function mulMatrixVector(m, v) {
-    var mNumRows = m.length, vNumCols = v.length, a = new Array(vNumCols);
-    for (var r = 0; r < mNumRows; ++r) {
+    const mNumRows = m.length, vNumCols = v.length, a = new Array(vNumCols);
+    for (let r = 0; r < mNumRows; ++r) {
         a[r] = 0;
-        for (var c = 0; c < vNumCols; ++c) {
+        for (let c = 0; c < vNumCols; ++c) {
             a[r] += m[r][c] * v[c];
         }
     }
@@ -287,22 +315,21 @@ function mulMatrixVector(m, v) {
 
 
 function getInv2x2(M) {
-    var detScale = 1 / (M[0][0] * M[1][1] - M[0][1] * M[1][0]);
-    var inv = [
+    let detScale = 1 / (M[0][0] * M[1][1] - M[0][1] * M[1][0]);
+    return [
         [detScale * M[1][1], -detScale * M[1][0]],
         [-detScale * M[0][1], detScale * M[0][0]]
     ];
-    return inv;
 }
 
 function getGameObject(id) {
     return gameObjects[id];
 }
 
-var keyInput = {"l":false,"r":false,"u":false,"d":false,"s":false};
+const keyInput = {"l": false, "r": false, "u": false, "d": false, "s": false};
 
 function sendInput(socket) {
-    var data = {
+    const data = {
         msg: 'input',
         input: keyInput,
         name: myName

@@ -1,10 +1,14 @@
 function Player (name, ws, gameWorld) {
     this.name = name;
     this.ws = ws;
-    this.timeAsKing = 0;
     this.gameWorld = gameWorld;
 
+    this.newGame();
 }
+
+Player.prototype.setGameWorld = function (gameWorld) {
+    this.gameWorld = gameWorld;
+};
 
 Player.prototype.setBug = function (bug) {
     this.bug = bug;
@@ -15,18 +19,23 @@ Player.prototype.getBug = function () {
     return this.bug;
 };
 
+Player.prototype.hasLiveBug = function () {
+    return this.bug !== null;
+};
+
 Player.prototype.bugKilled = function () {
     if (this.isKing()) {
         this.gameWorld.kingKilled();
     }
+    this.bug = null;
 };
 
 Player.prototype.isKing = function () {
-    return this.bug !== undefined && this.bug.isKingBug();
+    return this.bug !== null && this.bug.isKingBug();
 };
 
 Player.prototype.update = function (dt) {
-    if (this.bug !== undefined) {
+    if (this.bug !== null) {
         this.bug.update(dt);
     }
 
@@ -36,7 +45,7 @@ Player.prototype.update = function (dt) {
 };
 
 Player.prototype.gotInput = function (input) {
-    if (this.bug !== undefined) {
+    if (this.bug !== null) {
         this.bug.setInputObj(input);
     }
 };
@@ -54,17 +63,25 @@ Player.prototype.isOnline = function () {
     return this.ws.readyState === 1;
 };
 
+Player.prototype.leave = function () {
+    this.bug = null;
+    this.gameWorld.playerLeave(this);
+};
+
 Player.prototype.getDrawableGameComponents = function () {
-    return this.bug !== undefined ? this.bug.getDrawableGameComponents() : [];
+    return this.bug !== null ? this.bug.getDrawableGameComponents() : [];
 };
 
 Player.prototype.getMetaData = function () {
     return {
-        playerName: this.name,
-        bugType: this.bug.bugType,
+        name: this.name,
+        bugName: this.bug.bugType,
         maxHealth: this.bug.maxHealth,
         health: this.bug.health,
-
+        x: this.bug.x,
+        y: this.bug.y,
+        a: this.bug.a,
+        timeAsKing: this.timeAsKing
     };
 };
 

@@ -3,29 +3,31 @@ const Player = require('./player');
 const Projectile = require('./attacks/projectile');
 const Turret = gameObjects.Turret;
 const Hill = gameObjects.Hill;
+const Ant = require('./bugs/bugAnt');
+const Spider = require('./bugs/bugSpider');
+const mathtools = require('./mathtools');
 
-const gameConfigHandler = require('./gameConfigHandler');
+const BUGS = [
+    Ant, Spider
+];
 
-function GameWorld (players, gameTimeLimit) {
+this.font = "20px sans-serif";
+
+function GameWorld (playerHandler, gameTimeLimit) {
     this.gameTimeLimit = gameTimeLimit;
-    this.timeLeft = this.gameTimeLimit;
-    this.timeTotal = 0;
-    this.isGameOver = false;
-
-    this.projectileList = [];
-    this.king = null;
-    this.topKing = null;
 
     this.worldWidth = 2000;
     this.worldHeight = 2000;
-    this.playersList = players;
 
-    this.defaultFireDelay = 400;
-    this.kingFireDelay = 800;
+    this.playerHandler = playerHandler;
+    this.players = playerHandler.players;
+
+    for (let i = 0; i < this.players.length; ++i) {
+        this.players[i].setGameWorld(this);
+    }
 
     this.initializeHill();
-    this.turretFront = new Turret(this.hill.x, this.hill.y, 32, true, null);
-    this.turretRear = new Turret(this.hill.x, this.hill.y, 32, false, null);
+    this.initializeTurrets();
 
     this.newGame();
 }
@@ -34,14 +36,9 @@ GameWorld.prototype.hasKingNow = function () {
     return this.king !== null;
 };
 
-GameWorld.prototype.gotPlayerInput = function (name, input) {
-    let p;
-    for (let i = 0; i < this.playersList.length; i++ ) {
-        p = this.playersList[i];
-        if (p.name === name) {
-            p.gotInput(input);
-        }
-    }
+GameWorld.prototype.initializeTurrets = function () {
+    this.turretFront = new Turret(this.hill.x, this.hill.y, 32, true, this);
+    this.turretRear = new Turret(this.hill.x, this.hill.y, 32, false, this);
 };
 
 GameWorld.prototype.initializeHill = function () {
@@ -53,87 +50,66 @@ GameWorld.prototype.initializeHill = function () {
         strokeColor: 'red',
         lineWidth: 10
     };
-    this.hill = new Hill(this.worldWidth / 2, this.worldHeight / 2, 60, 150, unoccupiedDrawProps, occupiedDrawProps);
+    this.hill = new Hill(this.worldWidth / 2, this.worldHeight / 2, 60, 150, unoccupiedDrawProps, occupiedDrawProps, this);
 };
 
 GameWorld.prototype.addProjectile = function (projectile) {
     this.projectileList.push(projectile);
 };
 
-GameWorld.prototype.randInt = function (ceil) {
-    return Math.floor(Math.random() * ceil);
-};
-
-GameWorld.prototype.randIntBetween = function (floor, ceil) {
-    return Math.floor(Math.random() * (ceil - floor) + floor);
-};
 
 GameWorld.prototype.playerLeave = function (player) {
-    if (player.isKing) {
-        this.kingKilled();
-    }
+    if (this.topKing === player) this.topKing = null;
+    if (this.king === player) this.king = null;
 };
 
 GameWorld.prototype.spawnPlayerRandomBug = function (player) {
-    player.gameWorld = this;
-    const side = this.randInt(4);
+    const randBugIndex = mathtools.randInt(BUGS.length);
+    let RandBug = BUGS[randBugIndex];
+    // RandBug = Spider;
+    // RandBug = Ant;
+    const bug = new RandBug(player);
+    const side = mathtools.randInt(4);
     const pad = 50;
     let x, y, angle;
     if (side === 0) { // spawn on bottom
-        x = this.randIntBetween(pad, this.worldWidth - pad);
+        x = mathtools.randIntBetween(pad, this.worldWidth - pad);
         y = pad;
         angle = Math.PI / 2;
     } else if (side === 1) { // spawn on right
         x = this.worldWidth - pad;
-        y = this.randIntBetween(pad, this.worldHeight - pad);
+        y = mathtools.randIntBetween(pad, this.worldHeight - pad);
         angle = Math.PI;
     } else if (side === 2) { // spawn on top
-        x = this.randIntBetween(pad, this.worldWidth - pad);
+        x = mathtools.randIntBetween(pad, this.worldWidth - pad);
         y = this.worldHeight - pad;
         angle = 3 * Math.PI / 2;
     } else if (side === 3) { // spawn on left
         x = pad;
-        y = this.randIntBetween(pad, this.worldHeight - pad);
+        y = mathtools.randIntBetween(pad, this.worldHeight - pad);
         angle = 0;
     }
-    const randBugIndex = this.randInt(gameConfigHandler.bugs.length);
-    const bug = gameConfigHandler.bugs[randBugIndex];
-    player.init(x, y, angle, bug);
-    player.setFireDelay(this.defaultFireDelay);
+    bug.setPosition(x, y);
+    bug.setAngle(angle);
+    player.setBug(bug);
 };
 
 GameWorld.prototype.kingKilled = function () {
-    const playerTemp = this.king;
     this.king = null;
-    this.spawnPlayerRandomBug(playerTemp);
-    this.hill.drawProps = this.getHillDrawProps();
-};
-
-GameWorld.prototype.kingRotated = function (king) {
-    this.turretFront.newAngle(king.a);
-    this.turretRear.newAngle(king.a);
 };
 
 GameWorld.prototype.newKing = function (player) {
-    player.x = this.hill.x;
-    player.y = this.hill.y;
-    player.a = this.turretFront.angle;
-    player.isKing = true;
+    player.bug.setPosition(this.hill.x, this.hill.y);
+    player.bug.setAngle(this.turretFront.a);
+    player.bug.crownKing();
     this.king = player;
-    this.king.setFireDelay(this.kingFireDelay);
-    this.hill.drawProps = this.getHillKingDrawProps();
 };
 
 GameWorld.prototype.updateWorld = function (dt) {
     if (this.isGameOver) return;
     // step 0 remove absent players
-    for (let i = 0; i < this.playersList.length; ++i) {
-        let p = this.playersList[i];
-        if (!p.isOnline()) {
-            this.playerLeave(p);
-            this.playersList.splice(i--, 1);
-        }
-    }
+    this.playerHandler.cleanOfflinePlayers();
+
     // step 1 update projectiles
     let p;
     for (let i = 0; i < this.projectileList.length; ++i) {
@@ -145,40 +121,56 @@ GameWorld.prototype.updateWorld = function (dt) {
         }
         // check collisions with other bugs
         let bug;
-        for (let j = 0; j < this.playersList.length; ++j) {
-            bug = this.playersList[j].bug;
+        for (let j = 0; j < this.players.length; ++j) {
+            bug = this.players[j].bug;
             if (p.collidedWithBug(bug)) { // check if projectile hit bug
-                bug.damage(p.getDamage());        // damage bug
+                bug.giveDamage(p.getDamage());        // damage bug
                 this.projectileList.splice(i--, 1); // remove projectile
                 break;
             }
         }
     }
 
-    // step 2 process all input
-    for (let i = 0; i < this.playersList.length; i++) {
-        let p = this.playersList[i];
+    // step 2 spawn dead players
+    for (let i = 0; i < this.players.length; ++i) {
+        if (!this.players[i].hasLiveBug()) {
+            this.spawnPlayerRandomBug(this.players[i]);
+        }
+    }
+
+    // step 3 process all input
+    for (let i = 0; i < this.players.length; i++) {
+        let p = this.players[i];
         p.update(dt);
     }
 
-    // step 3 check for new king
+    // update turrets
+    this.turretFront.update(dt);
+    this.turretRear.update(dt);
+
+    // step 4 check for new king
     if (this.king === null) {
-        let minDist = 2147483647, newKing = null, dist;
-        for (let i = 0; i < this.playersList.length; i++) {
-            let p = this.playersList[i];
-            dist = this.hill.distFromKingCenter(p);
+        let minDist = 2147483647, newKing = null, dist, bug;
+        for (let i = 0; i < this.players.length; i++) {
+            bug = this.players[i].bug;
+            dist = this.hill.distFromKingCenter(bug);
             if (dist >= 0 && dist < minDist) {
                 minDist = dist;
-                newKing = p;
+                newKing = bug;
             }
         }
         if (newKing !== null) {
-            this.newKing(newKing);
+            this.newKing(newKing.player);
         }
     }
 
+    // step 5 check for new top king
+    if (this.king !== null &&
+        (this.topKing === null || this.king.timeAsKing > this.topKing.timeAsKing)) {
+        this.topKing = this.king;
+    }
+
     this.timeLeft -= dt;
-    this.timeTotal += dt;
 
     if (this.timeLeft <= 0) {
         this.gameOver();
@@ -192,25 +184,19 @@ GameWorld.prototype.gameOver = function () {
 };
 
 GameWorld.prototype.initPlayersNewGame = function () {
-    for (let i = 0; i< this.playersList.length; i++) {
-        this.spawnPlayerRandomBug(this.playersList[i]);
-        this.playersList[i].newGame();
-    }
-};
-
-GameWorld.prototype.initPlayers = function () {
-    for (let i = 0; i < this.playersList.length; i++) {
-        this.spawnPlayerRandomBug(this.playersList[i]);
+    for (let i = 0; i< this.players.length; i++) {
+        this.players[i].newGame();
     }
 };
 
 GameWorld.prototype.newGame = function () {
-    this.initPlayersNewGame();
     this.timeLeft = this.gameTimeLimit;
-    this.timeTotal = 0;
     this.king = null;
+    this.topKing = null;
     this.isGameOver = false;
-    this.hill.drawProps = this.getHillDrawProps();
+    this.projectileList = [];
+
+    this.initPlayersNewGame();
 };
 
 module.exports = GameWorld;

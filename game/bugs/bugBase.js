@@ -1,27 +1,33 @@
 const mathtools = require('../mathtools');
 const DrawableComponent = require('../gameConfigHandler').DrawableComponent;
+const GlobalDrawProps = require('../globalDrawProperties');
+const HillAttack = require('../attacks/hillAttack');
+
 
 function BugBase (player) {
     this.player = player;
-    this.gameWorld = player.gameWorld;
 
     this.curSpriteIndex = 0;
     this.curSpriteTime = 0;
-    this.timePerSprite = 100;
 
     this.isKing = false;
-    this.timeAsKing = 0;
+
+    this.gameWorld = player.gameWorld;
 
     this.maxHealth = this.JSONConfig.health;
     this.speed = this.JSONConfig.speed;
     this.sprites = this.JSONConfig.sprites;
     this.damage = this.JSONConfig.damage;
     this.bugType = this.JSONConfig.bugType;
+    this.reloadTime = this.JSONConfig.reloadTime;
+
+    this.timePerSprite = this.calcTimePerSprite(this.speed);
 
     this.health = this.maxHealth;
     this.angularSpeed = 2;
 
     this.input = player.getDefaultInputObj();
+    this.setAttack(this.getDefaultAttack());
 }
 
 BugBase.prototype.isKingBug = function () {
@@ -30,10 +36,12 @@ BugBase.prototype.isKingBug = function () {
 
 BugBase.prototype.crownKing = function () {
     this.isKing = true;
+    this.attack = new HillAttack(this);
 };
 
 BugBase.prototype.dethroneKing = function () {
     this.isKing = false;
+    this.attack = this.getDefaultAttack();
 };
 
 BugBase.prototype.getCurrentSprite = function () {
@@ -48,13 +56,18 @@ BugBase.prototype.updateSprite = function (dt) {
     }
 };
 
+BugBase.prototype.calcTimePerSprite = function (speedInSeconds) {
+    const speedMS = speedInSeconds / 1000;
+    const k = 70 / this.sprites.length;
+    return k / speedMS;
+};
+
+BugBase.prototype.setTimePerSprite = function (t) {
+    this.timePerSprite = t;
+};
+
 BugBase.prototype.update = function (dt) {
-    if (this.shouldProcessInputNormally()) {
-        this.processInput(dt);
-    }
-    if (this.shouldUpdateSpriteNormally()) {
-        this.updateSprite(dt);
-    }
+    this.processInput(dt);
     this.updateBoundingBox();
 };
 
@@ -63,15 +76,16 @@ BugBase.prototype.getInputObj = function () {
 };
 
 BugBase.prototype.setInputObj = function (inputObj) {
+    //console.log('new input object : ', inputObj);
     this.input = inputObj;
 };
 
-BugBase.prototype.shouldProcessInputNormally = function () {
-    return this.attack.shouldProcessInputNormally();
+BugBase.prototype.shouldProcessInput = function () {
+    return this.attack.shouldProcessInput();
 };
 
-BugBase.prototype.shouldUpdateSpriteNormally = function () {
-    return this.attack.shouldUpdateSpriteNormally();
+BugBase.prototype.shouldUpdateSprite = function () {
+    return this.attack.shouldUpdateSprite();
 };
 
 BugBase.prototype.processInput = function (dt) {
@@ -79,45 +93,53 @@ BugBase.prototype.processInput = function (dt) {
     if (ip === undefined) return;
     const l = ip.l, r = ip.r, u = ip.u, d = ip.d, s = ip.s;
 
-    // forward/back motion
-    let dx = 0, dy = 0;
-    const vScale = this.speed * dt / 1000.0;
-    if (!(u && d) && !this.isKing) {
-        if (u) {
-            dx = vScale * Math.cos(this.a);
-            dy = vScale * Math.sin(this.a);
-        } else if (d) {
-            dx = - vScale * Math.cos(this.a);
-            dy = - vScale * Math.sin(this.a);
+    // normal input
+    if (this.shouldProcessInput()) {
+        // forward/back motion
+        let dx = 0, dy = 0;
+        const vScale = this.speed * dt / 1000.0;
+        if (!(u && d) && !this.isKing) {
+            if (u) {
+                dx = vScale * Math.cos(this.a);
+                dy = vScale * Math.sin(this.a);
+            } else if (d) {
+                dx = -vScale * Math.cos(this.a);
+                dy = -vScale * Math.sin(this.a);
+            }
         }
+        const validDeltas = this.getValidMovement(dx, dy);
+        this.x += validDeltas[0];
+        this.y += validDeltas[1];
+
+        // rotation
+        let da = 0;
+        let angularSpeedScaled = this.angularSpeed * dt / 1000;
+        if (!(l && r)) {
+            if (l) da = angularSpeedScaled;
+            else if (r) da = -angularSpeedScaled;
+        }
+        this.a += da;
     }
-    const validDeltas = this.getValidMovement(dx, dy);
-    this.x += validDeltas[0];
-    this.y += validDeltas[1];
+    this.attack.update(dt);
 
-    // rotation
-    let da = 0;
-    let angularSpeedScaled = this.angularSpeed * dt / 1000;
-    if (!(l && r)) {
-        if (l) da = angularSpeedScaled;
-        else if (r) da = -angularSpeedScaled;
-    }
-    this.a += da;
-
-    // if (da !== 0 && this.isKing) this.gameWorld.kingRotated(this);
-
-    if (
-        ((l || r) && !(l && r))
-        || ((u || d) && !(u && d))
-    ) this.updateSprite(dt);
-
-
-    // fire logic
+    // attack logic
     if (s) {
         this.attack.attack();
     }
-    else if (this.timeUntilNextFire > 0) this.timeUntilNextFire -= dt;
 
+    if (this.shouldUpdateSprite() === undefined
+        && (((l || r) && !(l && r)) || ((u || d) && !(u && d))) ) // movement
+    {
+        this.updateSprite(dt);
+    }
+    else if (this.shouldUpdateSprite()) {
+        this.updateSprite(dt);
+    }
+
+};
+
+BugBase.prototype.getPosition = function () {
+    return [this.x, this.y];
 };
 
 BugBase.prototype.setPosition = function (x, y) {
@@ -162,8 +184,8 @@ BugBase.prototype.getBoundingBox = function () {
 };
 
 BugBase.prototype.updateBoundingBox = function () {
-    const halfWidth = this.width / 2;
-    const halfHeight = this.height / 2;
+    const halfWidth = this.sprites[this.curSpriteIndex].width / 2;
+    const halfHeight = this.sprites[this.curSpriteIndex].height / 2;
     this.boundingBox = [
         [this.x + halfWidth, this.y + halfHeight],
         [this.x - halfWidth, this.y + halfHeight],
@@ -191,7 +213,7 @@ BugBase.prototype.setHealth = function (health) {
     }
 };
 
-BugBase.prototype.damage = function (damage) {
+BugBase.prototype.giveDamage = function (damage) {
     this.health -= damage;
     if (this.health <= 0) {
         this.killed();
@@ -227,6 +249,10 @@ BugBase.prototype.getDrawableGameComponents = function () {
     bugComp.id = sprite.id;
     bugComp.w = sprite.width;
     bugComp.h = sprite.height;
+    bugComp.font = GlobalDrawProps.globalFont;
+
+    bugComp.isPlayer = true;
+    bugComp.playerName = this.player.name;
 
     comps.push(bugComp);
 

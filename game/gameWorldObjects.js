@@ -1,6 +1,6 @@
 const gameConfig = require('./gameConfigHandler');
 const DrawableComponent = gameConfig.DrawableComponent;
-const mathtools = require('./mathtools');
+
 const o = module.exports = {};
 
 o.Hill = function (x, y, newKingWithinRadius, playerWithinHillRadius, unoccupiedDrawProps, occupiedDrawProps, gameWorld) {
@@ -13,14 +13,14 @@ o.Hill = function (x, y, newKingWithinRadius, playerWithinHillRadius, unoccupied
 
     this.gameWorld = gameWorld;
 
-    this.moveOutsideHill = function (bug) {
-        const dx = bug.x - this.x, dy = bug.y - this.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist >= this.playerWithinHillRadius) return;
-        const newX = this.x + dx * this.playerWithinHillRadius / dist;
-        const newY = this.y + dy * this.playerWithinHillRadius / dist;
-        bug.setPosition(newX, newY);
-    };
+    // this.moveOutsideHill = function (bug) {
+    //     const dx = bug.x - this.x, dy = bug.y - this.y;
+    //     const dist = Math.sqrt(dx * dx + dy * dy);
+    //     if (dist >= this.playerWithinHillRadius) return;
+    //     const newX = this.x + dx * this.playerWithinHillRadius / dist;
+    //     const newY = this.y + dy * this.playerWithinHillRadius / dist;
+    //     bug.setPosition(newX, newY);
+    // };
 
     this.distFromKingCenter = function (bug) {
         const dx = bug.x - this.x, dy = bug.y - this.y;
@@ -46,32 +46,33 @@ o.Hill = function (x, y, newKingWithinRadius, playerWithinHillRadius, unoccupied
         comp.radius = this.playerWithinHillRadius;
         comp.isCircle = true;
         comp.stroke = true;
-        comp.strokeColor = hill.drawProps.strokeColor;
-        comp.lineWidth = hill.drawProps.lineWidth;
+        comp.strokeColor = drawProps.strokeColor;
+        comp.lineWidth = drawProps.lineWidth;
 
         return [comp];
     };
 };
 
-o.Turret = function (hillX, hillY, radius, isFront, drawProps) {
+o.Turret = function (hillX, hillY, radius, isFront, gameWorld) {
 
     this.isFront = isFront;
-    this.drawProps = drawProps;
 
-    this.angle = isFront ? 0 : Math.PI;
+    this.a = isFront ? 0 : Math.PI;
     this.length = gameConfig.turretImageObj.height;
     this.width = gameConfig.turretImageObj.width;
     this.hillX = hillX;
     this.hillY = hillY;
     this.radius = radius + this.length / 2;
 
+    this.gameWorld = gameWorld;
+
     this.calcCoords = function () {
-        this.x = this.hillX + this.radius * Math.cos(this.angle);
-        this.y = this.hillY + this.radius * Math.sin(this.angle);
+        this.x = this.hillX + this.radius * Math.cos(this.a);
+        this.y = this.hillY + this.radius * Math.sin(this.a);
     };
 
     this.newAngle = function (angle) {
-        this.angle = this.isFront ? angle : angle + Math.PI;
+        this.a = this.isFront ? angle : angle + Math.PI;
         this.calcCoords();
     };
 
@@ -79,10 +80,16 @@ o.Turret = function (hillX, hillY, radius, isFront, drawProps) {
         const comp = new DrawableComponent();
         comp.x = this.x;
         comp.y = this.y;
-        comp.a = this.angle;
+        comp.a = this.a;
         comp.isImageObj = true;
         comp.id = gameConfig.turretImageObj.id;
         return [comp];
+    };
+
+    this.update = function (dt) {
+        if (!this.gameWorld.hasKingNow()) return;
+        const king = this.gameWorld.king;
+        this.newAngle(king.bug.a);
     };
 
     this.calcCoords();

@@ -2,12 +2,12 @@ function Attack (bug) {
     this.bug = bug;
 }
 
-Attack.prototype.processInputNormally = function () {
+Attack.prototype.shouldProcessInput = function () {
     return true;
 };
 
-Attack.prototype.updateSpritesNormally = function () {
-    return true;
+Attack.prototype.shouldUpdateSprite = function () {
+    return undefined;
 };
 
 // Attack.prototype.canAttack = function ()
@@ -18,3 +18,4 @@ Attack.prototype.updateSpritesNormally = function () {
 
 // Attack.prototype.getDrawableComponents = function ()
 
+module.exports = Attack;
