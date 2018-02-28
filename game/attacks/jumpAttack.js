@@ -32,12 +32,18 @@ JumpAttack.prototype.update = function (dt) {
         if (this.curJumpDistance > this.maxJumpDistance) {
             this.stopJump();
         } else {
-
             const dist = this.jumpSpeed * dt;
             const deltaX = [dist * Math.cos(this.bug.a), dist * Math.sin(this.bug.a)];
             const newPos = mathtools.addVectors(deltaX, this.bug.getPosition());
             this.bug.setPosition(newPos[0], newPos[1]);
             this.curJumpDistance += dist;
+            const players = this.bug.gameWorld.players;
+            for (let i = 0; i < players.length; ++i) {
+                if (this.isCollidingWithBug(players[i].bug)) {
+                    players[i].bug.giveDamage(this.damage);
+                    this.stopJump();
+                }
+            }
         }
     }
 };
@@ -79,6 +85,11 @@ JumpAttack.prototype.jump = function () {
 
 JumpAttack.prototype.getDrawableGameComponents = function () {
     return [];
+};
+
+JumpAttack.prototype.isCollidingWithBug = function (bug) {
+    if (this.bug === bug) return false;
+    return mathtools.isInside(this.bug.getPosition(), bug.getBoundingBox());
 };
 
 module.exports = JumpAttack;

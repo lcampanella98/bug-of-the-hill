@@ -22,7 +22,9 @@ router.ws('/', function (ws, req) {
         const nameTaken = function () {sendMsg(ws, 'nametaken')};
         const invalidName = function () {sendMsg(ws, 'nameinvalid')};
         const success = function () {
-            ws.send(JSON.stringify({msg:'joinsuccess', gameObjects: gameImageObjectHandler.allGameObjectsById}));
+            let successMsg = game.getDataObject(true);
+            successMsg.msg = 'joinsuccess';
+            ws.send(JSON.stringify(successMsg));
         };
 
         if (game.initialized) {

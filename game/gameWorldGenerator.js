@@ -19,28 +19,32 @@ function GameWorldGenerator (gameWorld) {
 }
 
 // call this to get data object
-GameWorldGenerator.prototype.getDataObject = function () {
-    this.components = [];
-    this.addAllComponents(this.backgroundComponents);
-    this.addAllComponents(this.boundaryRects);
-    this.addAllComponents(this.gameWorld.turretFront.getDrawableGameComponents());
-    this.addAllComponents(this.gameWorld.turretRear.getDrawableGameComponents());
+GameWorldGenerator.prototype.getDataObject = function (updateBackground) {
+    this.components = {};
+    if (updateBackground) {
+        this.components.backgroundComponents = [];
+        this.addAllComponents(this.backgroundComponents, this.components.backgroundComponents);
+        this.addAllComponents(this.boundaryRects, this.components.backgroundComponents);
+    }
+    this.components.changingComponents = [];
+    this.addAllComponents(this.gameWorld.turretFront.getDrawableGameComponents(), this.components.changingComponents);
+    this.addAllComponents(this.gameWorld.turretRear.getDrawableGameComponents(), this.components.changingComponents);
 
-    this.addAllComponents(this.gameWorld.hill.getDrawableGameComponents());
+    this.addAllComponents(this.gameWorld.hill.getDrawableGameComponents(), this.components.changingComponents);
 
     for (let i = 0; i < this.gameWorld.players.length; i++) {
-        this.addAllComponents(this.gameWorld.players[i].getDrawableGameComponents());
+        this.addAllComponents(this.gameWorld.players[i].getDrawableGameComponents(), this.components.changingComponents);
     }
     for (let i = 0; i < this.gameWorld.projectileList.length; i++) {
-        this.addAllComponents(this.gameWorld.projectileList[i].getDrawableGameComponents());
+        this.addAllComponents(this.gameWorld.projectileList[i].getDrawableGameComponents(), this.components.changingComponents);
     }
 
     return this.components;
 };
 
-GameWorldGenerator.prototype.addAllComponents = function (comps) {
+GameWorldGenerator.prototype.addAllComponents = function (comps, arr) {
     for (let i = 0; i < comps.length; ++i) {
-        this.components.push(comps[i]);
+        arr.push(comps[i]);
     }
 };
 

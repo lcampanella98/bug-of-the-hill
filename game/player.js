@@ -27,7 +27,8 @@ Player.prototype.bugKilled = function () {
     if (this.isKing()) {
         this.gameWorld.kingKilled();
     }
-    this.bug = null;
+    this.gameWorld.spawnPlayerRandomBug(this);
+    // this.bug = null;
 };
 
 Player.prototype.isKing = function () {

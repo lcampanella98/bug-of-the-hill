@@ -110,6 +110,14 @@ GameWorld.prototype.updateWorld = function (dt) {
     // step 0 remove absent players
     this.playerHandler.cleanOfflinePlayers();
 
+
+    // step 2 spawn players
+    for (let i = 0; i < this.players.length; ++i) {
+        if (!this.players[i].hasLiveBug()) {
+            this.spawnPlayerRandomBug(this.players[i]);
+        }
+    }
+
     // step 1 update projectiles
     let p;
     for (let i = 0; i < this.projectileList.length; ++i) {
@@ -131,12 +139,6 @@ GameWorld.prototype.updateWorld = function (dt) {
         }
     }
 
-    // step 2 spawn dead players
-    for (let i = 0; i < this.players.length; ++i) {
-        if (!this.players[i].hasLiveBug()) {
-            this.spawnPlayerRandomBug(this.players[i]);
-        }
-    }
 
     // step 3 process all input
     for (let i = 0; i < this.players.length; i++) {

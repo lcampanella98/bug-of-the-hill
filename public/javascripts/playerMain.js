@@ -1,5 +1,8 @@
-let gameObjects;
+let gameImages;
 let myName;
+let myGameArea;
+
+let gameWorld;
 
 $(function() {
     let socket;
@@ -33,8 +36,9 @@ $(function() {
                     $('#btn-join').hide();
                     $('#msg').text('Waiting for admin to start match...');
                     myName = name;
-                    gameObjects = data.gameObjects;
+                    gameImages = data.gameObjects;
                     loadObjectImages();
+                    loadGameWorldData(data.gameWorld);
                     objectsLoaded = true;
                 } else if (msg === 'alreadystarted') {
                     $('#msg').text('Game already started.');
@@ -48,8 +52,8 @@ $(function() {
                 }
             } else {
                 if (data.msg === 'gameupdate') {
-                    if (objectsLoaded)
-                        updateGameArea(data);
+                    loadGameWorldData(data.gameWorld);
+                    updateGameArea();
                 }
             }
         };
@@ -66,13 +70,35 @@ $(function() {
 
 });
 
-let myGameArea;
+function loadGameWorldData(gameWorldData) {
+    if (!gameWorld) {
+        gameWorld = gameWorldData;
+        return;
+    }
+    for (let k in gameWorldData) {
+        if (gameWorldData.hasOwnProperty(k)) {
+            if (k !== 'components') {
+                gameWorld[k] = gameWorldData[k];
+            } else {
+                if (!gameWorld.hasOwnProperty('components')) {
+                    gameWorld.components = gameWorldData.components;
+                } else {
+                    for (let compKey in gameWorldData.components) {
+                        if (gameWorldData.components.hasOwnProperty(compKey)) {
+                            gameWorld.components[compKey] = gameWorldData.components[compKey];
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 function loadObjectImages () {
     const span = $('<span id="span-object-img" style="display:none"></span>');
-    for (const id in gameObjects) {
-        if (gameObjects.hasOwnProperty(id)) {
-            const obj = gameObjects[id];
+    for (const id in gameImages) {
+        if (gameImages.hasOwnProperty(id)) {
+            const obj = gameImages[id];
             const file = obj.file;
             const src = window.location.href + "images/" + file;
             // console.log(src);
@@ -98,8 +124,6 @@ function startGame() {
     // remove elements
     startPageToGamePage();
     const cvs = $('#cvs');
-    // console.log(cvs.width());
-    // console.log(cvs.height());
     myGameArea = {
         canvas : cvs.get(0),
         start : function() {
@@ -115,9 +139,19 @@ function startGame() {
     myGameArea.start();
 }
 
+function renderPlayerHealthbar(ctx, maxHealth, curHealth, pWidth, pHeight) {
+    let w = 70, h = 15;
+    let x = -w / 2, y = -Math.hypot(pWidth, pHeight) / 2;
+    renderHealthBar(ctx, maxHealth, curHealth, x, y, w, h);
+    return [x, y, w, h];
+}
 
-function renderHealthBar(ctx, maxHealth, curHealth, x, y) {
-    let w = 150, h = 20, sW = 4;
+function renderLargeHealthBar(ctx, maxHealth, curHealth, x, y) {
+    renderHealthBar(ctx, maxHealth, curHealth, x, y, 150, 20);
+}
+
+function renderHealthBar(ctx, maxHealth, curHealth, x, y, w, h) {
+    let sW = 2 + h / 10;
     let tx = x+w/2,ty = y+h/2;
     ctx.translate(tx, ty);
     ctx.strokeStyle = 'black';
@@ -130,7 +164,8 @@ function renderHealthBar(ctx, maxHealth, curHealth, x, y) {
 }
 
 
-function updateGameArea(data) {
+function updateGameArea() {
+    const data = gameWorld;
     let components = data.components;
     let kingName = data.kingName;
     let topKingName = data.topKingName;
@@ -160,8 +195,18 @@ function updateGameArea(data) {
     let ctx = myGameArea.context;
     let x, xB, w, h, a, obj, img, r;
     let playerTemp;
-    for (let i = 0; i < components.length; i++) {
-        comp = components[i];
+
+    let compGroups = [];
+    for (let cg in components) if (components.hasOwnProperty(cg)) compGroups.push(components[cg]);
+
+    let stuff = 0;
+    for (let cgidx = 0, cIdx = 0; cgidx < compGroups.length; ++cIdx) {
+        if (cIdx >= compGroups[cgidx].length) {
+            ++cgidx;
+            if (cgidx >= compGroups.length) break;
+            cIdx = 0;
+        }
+        comp = compGroups[cgidx][cIdx];
         x = [comp.x - r0[0], comp.y - r0[1]];
         xB = mulMatrixVector(Binv, x);
 
@@ -183,10 +228,11 @@ function updateGameArea(data) {
                     ctx.rotate(-a);
                     if (comp.playerName !== myName && comp.playerName !== kingName) { // render text/health bar above player
                         playerTemp = data.players[comp.playerName];
-
+                        const bar = renderPlayerHealthbar(ctx, playerTemp.maxHealth, playerTemp.health, w, h);
                         ctx.font = comp.font;
-                        ctx.fillStyle = comp.fillStyle;
-                        ctx.fillText(comp.playerName, -5*comp.playerName.length,-h/2-10);
+                        ctx.fillStyle = 'black';
+                        ctx.fillText(comp.playerName, -5*comp.playerName.length,bar[1] - 10);
+
                     }
                     ctx.rotate(a);
                 }
@@ -225,6 +271,7 @@ function updateGameArea(data) {
         ctx.translate(-xB[0],-xB[1]);
     }
     let newContent;
+    console.log('rendered ' + stuff + ' things');
 
     let infoBugName = $('#info-bug-name');
     newContent = you.name;
@@ -238,7 +285,7 @@ function updateGameArea(data) {
         infoElement.text(newContent);
     }
 
-    renderHealthBar(ctx, you.maxHealth, you.health, infoElement.offset().left, infoElement.offset().top + 50);
+    renderLargeHealthBar(ctx, you.maxHealth, you.health, infoElement.offset().left, infoElement.offset().top + 50);
 
     let timeInfo = $('#time-info');
     newContent = "Time Left<br>" + Math.ceil(data.gameTimeLeft/1000);
@@ -257,7 +304,7 @@ function updateGameArea(data) {
         if (infoKingTime.text() !== newContent) {
             infoKingTime.text();
         }
-        renderHealthBar(ctx, king.maxHealth, king.health, infoKingTime.offset().left, infoKingTime.offset().top + 50);
+        renderLargeHealthBar(ctx, king.maxHealth, king.health, infoKingTime.offset().left, infoKingTime.offset().top + 50);
 
     } else {
         newContent = 'Hill Open';
@@ -323,7 +370,7 @@ function getInv2x2(M) {
 }
 
 function getGameObject(id) {
-    return gameObjects[id];
+    return gameImages[id];
 }
 
 const keyInput = {"l": false, "r": false, "u": false, "d": false, "s": false};

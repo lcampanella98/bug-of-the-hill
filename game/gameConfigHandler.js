@@ -122,7 +122,7 @@ for (let i = 0; i < allGameImageObjects.length; i++) {
     gameObjIdMap[allGameImageObjects[i].id] = allGameImageObjects[i];
 }
 
-exp.allGameObjectsById = gameObjIdMap;
+exp.allGameImageObjectsById = gameObjIdMap;
 exp.turretImageObj = turret;
 exp.bgGridImageObj = bgGrid;
 

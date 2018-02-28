@@ -3,6 +3,8 @@ const PlayerHandler = require("./playerHandler");
 const GameWorld = require("./gameWorld");
 const GameWorldGenerator = require("./gameWorldGenerator");
 
+const gameImageObjectHandler = require("./gameConfigHandler");
+
 const MSG = {};
 game.MSG = MSG;
 
@@ -77,33 +79,36 @@ game.updateWorld = function () {
     setTimeout(function() {self.updateWorld();}, this.MS_PER_FRAME - elapsed);
 };
 
-let printed = false;
 
-game.getDataObject = function () {
+game.getDataObject = function (isInitialization) {
     const datObj = {};
-    datObj.components = this.gameWorldGenerator.getDataObject();
 
-    datObj.players = {};
+    if (isInitialization)
+        datObj.gameObjects = gameImageObjectHandler.allGameImageObjectsById;
+
+    datObj.gameWorld = {};
+
+    datObj.gameWorld.components = this.gameWorldGenerator.getDataObject(isInitialization);
+
+    if (isInitialization) return datObj;
+
+    datObj.gameWorld.players = {};
     const players = this.playerHandler.players;
     let p;
     for (let i = 0; i < players.length; i++) {
         p = players[i];
-        if (p.isOnline()) datObj.players[p.name] = p.getMetaData();
+        if (p.isOnline()) datObj.gameWorld.players[p.name] = p.getMetaData();
     }
-    datObj.topKingName = this.gameWorld.topKing === null ? null : this.gameWorld.topKing.name;
-    datObj.kingName = this.gameWorld.king === null ? null : this.gameWorld.king.name;
+    datObj.gameWorld.topKingName = this.gameWorld.topKing === null ? null : this.gameWorld.topKing.name;
+    datObj.gameWorld.kingName = this.gameWorld.king === null ? null : this.gameWorld.king.name;
 
-    datObj.gameTimeLeft = this.gameWorld.timeLeft;
+    datObj.gameWorld.gameTimeLeft = this.gameWorld.timeLeft;
 
     return datObj;
 };
 
 game.sendNextFrame = function () {
     const dataObj = this.getDataObject();
-    if (!printed && this.playerHandler.players.length > 0) {
-        //console.log(dataObj);
-        printed = true;
-    }
 
     dataObj.msg = MSG.GAMEUPDATE;
     game.broadcastMessage(JSON.stringify(dataObj));
