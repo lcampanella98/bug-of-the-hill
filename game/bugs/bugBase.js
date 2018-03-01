@@ -37,6 +37,8 @@ BugBase.prototype.isKingBug = function () {
 BugBase.prototype.crownKing = function () {
     this.isKing = true;
     this.attack = new HillAttack(this);
+    this.health *= 2;
+    this.maxHealth *= 2;
 };
 
 BugBase.prototype.dethroneKing = function () {
