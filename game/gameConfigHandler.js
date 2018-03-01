@@ -1,5 +1,6 @@
 const bugObj = require('../bug/bugs.json');
 const sizeOf = require('image-size');
+const fs = require('fs');
 
 
 function imgPathToFullPath(imgPath) {
@@ -82,39 +83,71 @@ bgGrid.width = bgGridDims.width;
 bgGrid.height = bgGridDims.height;
 allGameImageObjects.push(bgGrid);
 
+// flytrap
+exp.flytrapSprites = [];
+let i = 1;
+
+while (true) {
+    let fName = 'flytrap/flytrap_' + i + '.png';
+    if (!fs.existsSync(imgPathToFullPath(fName))) break;
+    let flytrapObj = new exp.GameImageObject();
+    flytrapObj.id = idCounter++;
+    flytrapObj.file = fName;
+    let dims = sizeOf(imgPathToFullPath(flytrapObj.file));
+    flytrapObj.width = dims.width;
+    flytrapObj.height = dims.height;
+    exp.flytrapSprites.push(flytrapObj);
+    allGameImageObjects.push(flytrapObj);
+    ++i;
+}
+
+
+
 // bugs
 const bugPrototypeFactory = require('./bugs/bugPrototypeFactory');
 
+exp.spritesByBug = {};
 
 for (let i = 0; i < arrBugsJSONConfig.length; ++i) {
     // add image objects
-    const bugSprites = arrBugsJSONConfig[i]['sprites'].map(function(sprite) {
+    const bugSprites = [];
+    let j = 1;
+    while (true) {
+        let fName = 'bug/' + arrBugsJSONConfig[i]['type'] + '/' + arrBugsJSONConfig[i]['type'] + '_' + j + '.png';
+        if (!fs.existsSync(imgPathToFullPath(fName))) break;
         const o = {};
-        o.file = 'bug/' + sprite;
+        o.file = fName;
         const dims = sizeOf(imgPathToFullPath(o.file));
         o.width = dims.width;
         o.height = dims.height;
         o.id = idCounter++;
-        return o;
-    });
+        bugSprites.push(o);
+        ++j;
+    }
+
+    exp.spritesByBug[arrBugsJSONConfig[i]['type']] = bugSprites;
 
     for (let j = 0; j < bugSprites.length; j++) {
         allGameImageObjects.push(bugSprites[j]);
     }
 
-    // add json config to bug prototype
-    const bugPrototypeObj = {
-        JSONConfig: {
-            speed: arrBugsJSONConfig[i]['speed'],
-            health: arrBugsJSONConfig[i]['health'],
-            bugType: arrBugsJSONConfig[i]['type'],
-            damage: arrBugsJSONConfig[i]['damage'],
-            reloadTime: arrBugsJSONConfig[i]['reloadTime'],
-            sprites: bugSprites
-        }
-    };
+    if (bugPrototypeFactory.hasPrototype(arrBugsJSONConfig[i]['type'])) {
 
-    bugPrototypeFactory.addToBugPrototype(arrBugsJSONConfig[i]['type'], bugPrototypeObj);
+
+        // add json config to bug prototype
+        const bugPrototypeObj = {
+            JSONConfig: {
+                speed: arrBugsJSONConfig[i]['speed'],
+                health: arrBugsJSONConfig[i]['health'],
+                bugType: arrBugsJSONConfig[i]['type'],
+                damage: arrBugsJSONConfig[i]['damage'],
+                reloadTime: arrBugsJSONConfig[i]['reloadTime'],
+                sprites: bugSprites
+            }
+        };
+
+        bugPrototypeFactory.addToBugPrototype(arrBugsJSONConfig[i]['type'], bugPrototypeObj);
+    }
 
 }
 const gameObjIdMap = {};

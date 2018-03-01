@@ -271,7 +271,7 @@ function updateGameArea() {
         ctx.translate(-xB[0],-xB[1]);
     }
     let newContent;
-    console.log('rendered ' + stuff + ' things');
+    //console.log('rendered ' + stuff + ' things');
 
     let infoBugName = $('#info-bug-name');
     newContent = you.name;

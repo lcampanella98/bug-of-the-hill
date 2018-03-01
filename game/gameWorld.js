@@ -5,10 +5,14 @@ const Turret = gameObjects.Turret;
 const Hill = gameObjects.Hill;
 const Ant = require('./bugs/bugAnt');
 const Spider = require('./bugs/bugSpider');
+const Bee = require('./bugs/bugBee');
+
+const Flytrap = require('./flytrap/flytrap');
+
 const mathtools = require('./mathtools');
 
 const BUGS = [
-    Ant, Spider
+    Ant, Spider, Bee
 ];
 
 this.font = "20px sans-serif";
@@ -68,6 +72,7 @@ GameWorld.prototype.spawnPlayerRandomBug = function (player) {
     let RandBug = BUGS[randBugIndex];
     // RandBug = Spider;
     // RandBug = Ant;
+    RandBug = Bee;
     const bug = new RandBug(player);
     const side = mathtools.randInt(4);
     const pad = 50;
@@ -105,17 +110,28 @@ GameWorld.prototype.newKing = function (player) {
     this.king = player;
 };
 
+GameWorld.prototype.spawnNewFlytrap = function () {
+    let rnd = Math.random();
+    const r0 = this.hill.playerWithinHillRadius, r1 = 800;
+    const r = (r1 - r0) * rnd * rnd + r0;
+    rnd = Math.random();
+    const a = 2 * Math.PI * rnd;
+    rnd = Math.random();
+    const flytrapA = 2 * Math.PI * rnd;
+    this.flytraps.push(new Flytrap(this, this.hill.x + r * Math.cos(a), this.hill.y + r * Math.sin(a), flytrapA));
+
+};
+
 GameWorld.prototype.updateWorld = function (dt) {
     if (this.isGameOver) return;
     // step 0 remove absent players
     this.playerHandler.cleanOfflinePlayers();
 
 
+
     // step 2 spawn players
     for (let i = 0; i < this.players.length; ++i) {
-        if (!this.players[i].hasLiveBug()) {
-            this.spawnPlayerRandomBug(this.players[i]);
-        }
+        if (this.players[i].shouldSpawn()) this.players[i].spawn();
     }
 
     // step 1 update projectiles
@@ -130,6 +146,7 @@ GameWorld.prototype.updateWorld = function (dt) {
         // check collisions with other bugs
         let bug;
         for (let j = 0; j < this.players.length; ++j) {
+            if (!this.players[j].hasLiveBug()) continue;
             bug = this.players[j].bug;
             if (p.collidedWithBug(bug)) { // check if projectile hit bug
                 bug.giveDamage(p.getDamage());        // damage bug
@@ -146,6 +163,19 @@ GameWorld.prototype.updateWorld = function (dt) {
         p.update(dt);
     }
 
+    // spawn and update flytraps
+    let rnd = Math.random();
+    if (rnd > 0.000 && rnd < 1 / 60 / 8) {
+        this.spawnNewFlytrap();
+    }
+
+    for (let i = 0; i < this.flytraps.length; ++i) {
+        this.flytraps[i].update(dt);
+        if (this.flytraps[i].shouldRemoveTrap()) {
+            this.flytraps.splice(i--, 1);
+        }
+    }
+
     // update turrets
     this.turretFront.update(dt);
     this.turretRear.update(dt);
@@ -154,6 +184,7 @@ GameWorld.prototype.updateWorld = function (dt) {
     if (this.king === null) {
         let minDist = 2147483647, newKing = null, dist, bug;
         for (let i = 0; i < this.players.length; i++) {
+            if (!this.players[i].hasLiveBug()) continue;
             bug = this.players[i].bug;
             dist = this.hill.distFromKingCenter(bug);
             if (dist >= 0 && dist < minDist) {
@@ -197,6 +228,7 @@ GameWorld.prototype.newGame = function () {
     this.topKing = null;
     this.isGameOver = false;
     this.projectileList = [];
+    this.flytraps = [];
 
     this.initPlayersNewGame();
 };

@@ -53,7 +53,7 @@ JumpAttack.prototype.shouldProcessInput = function () {
 };
 
 JumpAttack.prototype.shouldUpdateSprite = function () {
-    return this.isJumping ? true : undefined; // undefined means "no comment, I have nothing to say"
+    return this.isJumping ? true : undefined; // undefined means "no comment, take care of it yourself"
 };
 
 

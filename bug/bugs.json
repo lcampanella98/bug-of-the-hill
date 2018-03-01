@@ -2,44 +2,27 @@
   "bugs": [
     {
       "type": "ant",
-      "speed": 250,
-      "health": 200,
+      "speed": 400,
+      "health": 150,
       "damage": 50,
-      "reloadTime": 500,
-      "sprites": [
-        "ant_1.png",
-        "ant_2.png",
-        "ant_3.png",
-        "ant_4.png"
-      ]
+      "reloadTime": 500
     },
     {
       "type": "spider",
       "speed": 350,
-      "health": 150,
+      "health": 200,
       "damage": 150,
-      "reloadTime": 1000,
-      "sprites": [
-        "spider_1.png",
-        "spider_2.png",
-        "spider_3.png",
-        "spider_4.png",
-        "spider_5.png",
-        "spider_6.png",
-        "spider_7.png",
-        "spider_8.png",
-        "spider_9.png",
-        "spider_10.png",
-        "spider_11.png",
-        "spider_12.png",
-        "spider_13.png",
-        "spider_14.png",
-        "spider_15.png",
-        "spider_16.png",
-        "spider_17.png",
-        "spider_18.png",
-        "spider_19.png"
-      ]
+      "reloadTime": 1000
+    },
+    {
+      "type": "bee",
+      "speed": 450,
+      "health": 100,
+      "damage": 50,
+      "reloadTime": 750
+    },
+    {
+      "type": "wasp"
     }
   ]
 }

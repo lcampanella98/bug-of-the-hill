@@ -67,8 +67,8 @@ game.playerInput = function (name, input) {
         player.gotInput(input);
     }
 };
-
-game.MS_PER_FRAME = 1000 / 60;
+game.FRAMES_PER_SEC = 60;
+game.MS_PER_FRAME = 1000 / game.FRAMES_PER_SEC;
 
 game.updateWorld = function () {
     const now = Date.now();

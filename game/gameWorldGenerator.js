@@ -32,6 +32,10 @@ GameWorldGenerator.prototype.getDataObject = function (updateBackground) {
 
     this.addAllComponents(this.gameWorld.hill.getDrawableGameComponents(), this.components.changingComponents);
 
+    for (let i = 0; i < this.gameWorld.flytraps.length; ++i) {
+        this.addAllComponents(this.gameWorld.flytraps[i].getDrawableGameComponents(), this.components.changingComponents);
+    }
+
     for (let i = 0; i < this.gameWorld.players.length; i++) {
         this.addAllComponents(this.gameWorld.players[i].getDrawableGameComponents(), this.components.changingComponents);
     }

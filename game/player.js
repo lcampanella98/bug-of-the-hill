@@ -1,7 +1,10 @@
+const SPAWN_WAIT_TIME = 1000;
+
 function Player (name, ws, gameWorld) {
     this.name = name;
     this.ws = ws;
     this.gameWorld = gameWorld;
+    this.timeSinceDeath = SPAWN_WAIT_TIME;
 
     this.newGame();
 }
@@ -20,14 +23,15 @@ Player.prototype.getBug = function () {
 };
 
 Player.prototype.hasLiveBug = function () {
-    return this.bug !== null;
+    return this.bug !== null && !this.bug.isDead();
 };
 
 Player.prototype.bugKilled = function () {
     if (this.isKing()) {
         this.gameWorld.kingKilled();
     }
-    this.gameWorld.spawnPlayerRandomBug(this);
+    this.timeSinceDeath = 0;
+    // this.gameWorld.spawnPlayerRandomBug(this);
     // this.bug = null;
 };
 
@@ -36,8 +40,13 @@ Player.prototype.isKing = function () {
 };
 
 Player.prototype.update = function (dt) {
-    if (this.bug !== null) {
+    if (this.hasLiveBug()) {
         this.bug.update(dt);
+    } else {
+        this.timeSinceDeath += dt;
+        if (this.shouldSpawn()) {
+            this.spawn();
+        }
     }
 
     if (this.isKing()) {
@@ -56,7 +65,7 @@ Player.prototype.getDefaultInputObj = function () {
 };
 
 Player.prototype.newGame = function () {
-    this.bug = null;
+    this.spawn();
     this.timeAsKing = 0;
 };
 
@@ -70,7 +79,16 @@ Player.prototype.leave = function () {
 };
 
 Player.prototype.getDrawableGameComponents = function () {
-    return this.bug !== null ? this.bug.getDrawableGameComponents() : [];
+    return this.bug.getDrawableGameComponents();
+};
+
+Player.prototype.shouldSpawn = function () {
+    return this.timeSinceDeath >= SPAWN_WAIT_TIME;
+};
+
+Player.prototype.spawn = function () {
+    this.gameWorld.spawnPlayerRandomBug(this);
+    this.timeSinceDeath = 0;
 };
 
 Player.prototype.getMetaData = function () {

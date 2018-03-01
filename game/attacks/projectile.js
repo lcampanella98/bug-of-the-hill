@@ -53,7 +53,9 @@ Projectile.prototype.isDone = function () {
 
 Projectile.prototype.collidedWithBug = function (bug) {
     if (bug === this.bug) return false;
-    return mathtools.isInside(this.getPosition(), bug.getBoundingBox());
+    const box = bug.getBoundingBox();
+    if (!box) return false;
+    return mathtools.isInside(this.getPosition(), box);
 };
 
 module.exports = Projectile;

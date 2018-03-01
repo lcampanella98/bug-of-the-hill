@@ -45,7 +45,12 @@ BugBase.prototype.dethroneKing = function () {
 };
 
 BugBase.prototype.getCurrentSprite = function () {
-    return this.sprites[this.curSpriteIndex];
+    if ((this.shouldUpdateSprite() === false) && typeof this.attack.getCurrentSprite === 'function'){
+
+        return this.attack.getCurrentSprite();
+    }
+    else
+        return this.sprites[this.curSpriteIndex];
 };
 
 BugBase.prototype.updateSprite = function (dt) {
@@ -89,6 +94,7 @@ BugBase.prototype.shouldUpdateSprite = function () {
 };
 
 BugBase.prototype.processInput = function (dt) {
+    if (this.isDead()) return;
     const ip = this.input;
     if (ip === undefined) return;
     const l = ip.l, r = ip.r, u = ip.u, d = ip.d, s = ip.s;
@@ -194,6 +200,14 @@ BugBase.prototype.updateBoundingBox = function () {
     ];
 };
 
+BugBase.prototype.getWidth = function () {
+    return this.sprites[this.curSpriteIndex].width;
+};
+
+BugBase.prototype.getHeight = function () {
+    return this.sprites[this.curSpriteIndex].height;
+};
+
 BugBase.prototype.getAttack = function () {
     return this.attack;
 };
@@ -209,6 +223,7 @@ BugBase.prototype.getHealth = function () {
 BugBase.prototype.setHealth = function (health) {
     this.health = health;
     if (this.health <= 0) {
+        this.health = 0;
         this.killed();
     }
 };
@@ -216,8 +231,13 @@ BugBase.prototype.setHealth = function (health) {
 BugBase.prototype.giveDamage = function (damage) {
     this.health -= damage;
     if (this.health <= 0) {
+        this.health = 0;
         this.killed();
     }
+};
+
+BugBase.prototype.isDead = function () {
+    return this.health <= 0;
 };
 
 BugBase.prototype.killed = function () {
@@ -245,7 +265,7 @@ BugBase.prototype.getDrawableGameComponents = function () {
     bugComp.x = this.x;
     bugComp.y = this.y;
     bugComp.a = this.a;
-    bugComp.isImageObj = true;
+    bugComp.isImageObj = !this.isDead();
     bugComp.id = sprite.id;
     bugComp.w = sprite.width;
     bugComp.h = sprite.height;
