@@ -3,20 +3,17 @@ let myName;
 let myGameArea;
 
 let gameWorld;
+let socket;
 
 $(function() {
-    let socket;
-    let gameStarted = false;
-    let objectsLoaded = false;
-
     $('#form-join').on('submit', function (e) {
+	let gameStarted = false;
+	let objectsLoaded = false;
+
         const name = $('#name').val().trim();
-        const addr = 'ws://' + window.location.host + '/play';
-        try {
-            socket = new WebSocket(addr);
-        } catch (e) {
+	tryConnect(name, function () {
             $('#msg').text('Unable to connect to server. Please try again later');
-        }
+	});
         socket.onopen = function () {
             socket.send(JSON.stringify({msg:'join',name:name}));
         };
@@ -59,6 +56,18 @@ $(function() {
         };
 
         socket.onclose = function () {
+		console.log("socket closed");
+		$('#top-king-info').text('Connection lost, attempting reconnect...');
+		
+		let reconnectInterval = setInterval(function () {
+			let connected = true;
+			tryConnect(myName, function() {connected=false;});
+			if (connected) {
+				clearInterval(reconnectInterval);
+				$('#top-king-info').text('');
+			}
+		}, 100);
+		
         };
 
         socket.onbeforeunload = function (event) {
@@ -69,6 +78,16 @@ $(function() {
     });
 
 });
+
+function tryConnect(name,onError) {
+	const addr = 'ws://' + window.location.host + '/play';
+        try {
+            socket = new WebSocket(addr);
+        } catch (e) {
+	    if (typeof onError === 'function') onError();
+        }
+ 
+}
 
 function loadGameWorldData(gameWorldData) {
     if (!gameWorld) {
@@ -381,7 +400,8 @@ function sendInput(socket) {
         input: keyInput,
         name: myName
     };
-    socket.send(JSON.stringify(data));
+    if (socket.readyState === socket.OPEN)
+	socket.send(JSON.stringify(data));
 }
 
 let useArrowKeys = true;
