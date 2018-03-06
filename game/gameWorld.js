@@ -11,6 +11,8 @@ const Flytrap = require('./flytrap/flytrap');
 
 const mathtools = require('./mathtools');
 
+const gameConfigHandler = require('./gameConfigHandler');
+
 const BUGS = [
     Ant, Spider, Bee
 ];
@@ -22,6 +24,9 @@ function GameWorld (playerHandler, gameTimeLimit) {
 
     this.worldWidth = 2000;
     this.worldHeight = 2000;
+
+    this.flytrapsPerSecond = gameConfigHandler.flytrapRate;
+    console.log(this.flytrapsPerSecond);
 
     this.playerHandler = playerHandler;
     this.players = playerHandler.players;
@@ -165,7 +170,7 @@ GameWorld.prototype.updateWorld = function (dt) {
 
     // spawn and update flytraps
     let rnd = Math.random();
-    if (rnd > 0.000 && rnd < 1 / 60 / 8) {
+    if (rnd > 0.000 && rnd < 1 / 60 / this.flytrapsPerSecond) {
         this.spawnNewFlytrap();
     }
 

@@ -58,6 +58,7 @@ exp.GameImageObject.prototype.appendToDrawableGameComponent = function (drawComp
     drawComp.h = this.height;
 };
 
+exp.flytrapRate = bugObj.flytrapRate !== undefined ? bugObj.flytrapRate : 8;
 
 const arrBugsJSONConfig = bugObj.bugs;
 const allGameImageObjects = [];

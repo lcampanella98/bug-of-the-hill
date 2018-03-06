@@ -39,6 +39,7 @@ JumpAttack.prototype.update = function (dt) {
             this.curJumpDistance += dist;
             const players = this.bug.gameWorld.players;
             for (let i = 0; i < players.length; ++i) {
+		if (!players[i].hasLiveBug()) continue;
                 if (this.isCollidingWithBug(players[i].bug)) {
                     players[i].bug.giveDamage(this.damage);
                     this.stopJump();
