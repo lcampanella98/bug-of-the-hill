@@ -6,89 +6,77 @@ let gameWorld;
 let socket;
 
 $(function() {
+
+    registerKeyListeners();
+
     $('#form-join').on('submit', function (e) {
-	let gameStarted = false;
-	let objectsLoaded = false;
 
-        const name = $('#name').val().trim();
-	tryConnect(name, function () {
+        myName = $('#name').val().trim();
+        tryConnect(function () {
             $('#msg').text('Unable to connect to server. Please try again later');
-	});
-        socket.onopen = function () {
-            socket.send(JSON.stringify({msg:'join',name:name}));
-        };
-
-        socket.onmessage = function (evt) {
-            const data = JSON.parse(evt.data);
-            const msg = data.msg.toLowerCase();
-            if (!gameStarted) {
-                if (msg === 'wait') {
-                    $('#msg').text('Please wait for admin to open game');
-                } else if (msg === 'nametaken') {
-                    $('#msg').text('Name taken');
-                } else if (msg === 'nameinvalid') {
-                    $('#msg').text('Name invalid');
-                } else if (msg === 'joinsuccess') {
-                    $('#name').attr('readonly', true);
-                    $('#btn-join').hide();
-                    $('#msg').text('Waiting for admin to start match...');
-                    myName = name;
-                    gameImages = data.gameObjects;
-                    loadObjectImages();
-                    loadGameWorldData(data.gameWorld);
-                    objectsLoaded = true;
-                } else if (msg === 'alreadystarted') {
-                    $('#msg').text('Game already started.');
-                } else if (msg === 'start') {
-                    gameStarted = true;
-                    addKeyListener(socket);
-                    startGame();
-                    // console.log('game started');
-                } else if (msg === 'gameover') {
-                    // gameOver();
-                }
-            } else {
-                if (data.msg === 'gameupdate') {
-                    loadGameWorldData(data.gameWorld);
-                    updateGameArea();
-                }
-            }
-        };
-
-        socket.onclose = function () {
-		console.log("socket closed");
-		$('#top-king-info').text('Connection lost, attempting reconnect...');
-		
-		let reconnectInterval = setInterval(function () {
-			let connected = true;
-			tryConnect(myName, function() {connected=false;});
-			if (connected) {
-				clearInterval(reconnectInterval);
-				$('#top-king-info').text('');
-			}
-		}, 100);
-		
-        };
-
-        socket.onbeforeunload = function (event) {
-            socket.close();
-        };
+        });
 
         e.preventDefault();
     });
 
 });
 
-function tryConnect(name,onError) {
-	const addr = 'ws://' + window.location.host + '/play';
-        try {
-            socket = new WebSocket(addr);
-        } catch (e) {
-	    if (typeof onError === 'function') onError();
-        }
- 
-}
+function tryConnect(onError) {
+    let gameStarted = false;
+    let objectsLoaded = false;
 
+	const addr = 'ws://' + window.location.host + '/play';
+    socket = new WebSocket(addr);
+    socket.onopen = function () {
+        if (typeof onSuccess === 'function') onSuccess();
+        socket.send(JSON.stringify({msg: 'join', name: myName}));
+    };
+    socket.onmessage = function (evt) {
+        const data = JSON.parse(evt.data);
+        const msg = data.msg.toLowerCase();
+        if (!gameStarted) {
+            if (msg === 'wait') {
+                $('#msg').text('Please wait for admin to open game');
+            } else if (msg === 'nametaken') {
+                $('#msg').text('Name taken');
+            } else if (msg === 'nameinvalid') {
+                $('#msg').text('Name invalid');
+            } else if (msg === 'joinsuccess') {
+                $('#name').attr('readonly', true);
+                $('#btn-join').hide();
+                $('#msg').text('Waiting for admin to start match...');
+                gameImages = data.gameObjects;
+                loadObjectImages();
+                loadGameWorldData(data.gameWorld);
+                objectsLoaded = true;
+            } else if (msg === 'alreadystarted') {
+                $('#msg').text('Game already started.');
+            } else if (msg === 'start') {
+                gameStarted = true;
+                startGame();
+                // console.log('game started');
+            } else if (msg === 'gameover') {
+                // gameOver();
+            }
+        } else {
+            if (data.msg === 'gameupdate') {
+                loadGameWorldData(data.gameWorld);
+                updateGameArea();
+            }
+        }
+    };
+    socket.onclose = function () {
+        // console.log("socket closed");
+        $('#top-king-info').text('Connection lost, attempting reconnect...');
+        setTimeout(tryConnect, 100);
+    };
+    socket.onerror = function () {
+        if (typeof onError === 'function') onError();
+    };
+    socket.onbeforeunload = function (event) {
+        socket.close();
+    };
+}
 function loadGameWorldData(gameWorldData) {
     if (!gameWorld) {
         gameWorld = gameWorldData;
@@ -114,6 +102,7 @@ function loadGameWorldData(gameWorldData) {
 }
 
 function loadObjectImages () {
+    $('#span-object-img').remove();
     const span = $('<span id="span-object-img" style="display:none"></span>');
     for (const id in gameImages) {
         if (gameImages.hasOwnProperty(id)) {
@@ -400,49 +389,52 @@ function sendInput(socket) {
         input: keyInput,
         name: myName
     };
-    if (socket.readyState === socket.OPEN)
-	socket.send(JSON.stringify(data));
+    if (typeof socket !== 'undefined' && socket.readyState === socket.OPEN)
+	    socket.send(JSON.stringify(data));
 }
 
 let useArrowKeys = true;
 let useWASD = true;
 
-function addKeyListener(socket) {
-    document.addEventListener('keydown', function(event) {
-        if((useArrowKeys && event.keyCode === 37)
-            || (useWASD && event.keyCode === 65)) { // left
-            keyInput['l'] = true;
-        } else if ((useArrowKeys && event.keyCode === 38)
-            || (useWASD && event.keyCode === 87)) { // up
-            keyInput['u'] = true;
-        } else if((useArrowKeys && event.keyCode === 39)
-            || (useWASD && event.keyCode === 68)) { // right
-            keyInput['r'] = true;
-        } else if ((useArrowKeys && event.keyCode === 40)
-            || (useWASD && event.keyCode === 83)) { // down
-            keyInput['d'] = true;
-        } else if (event.keyCode === 32) {
-            keyInput['s'] = true;
-        }
-        sendInput(socket);
-    });
-    document.addEventListener('keyup', function(event) {
-        if((useArrowKeys && event.keyCode === 37)
-            || (useWASD && event.keyCode === 65)) { // left
-            keyInput['l'] = false;
-        } else if ((useArrowKeys && event.keyCode === 38)
-            || (useWASD && event.keyCode === 87)) { // up
-            keyInput['u'] = false;
-        } else if((useArrowKeys && event.keyCode === 39)
-            || (useWASD && event.keyCode === 68)) { // right
-            keyInput['r'] = false;
-        } else if ((useArrowKeys && event.keyCode === 40)
-            || (useWASD && event.keyCode === 83)) { // down
-            keyInput['d'] = false;
-        } else if (event.keyCode === 32) {
-            keyInput['s'] = false;
-        }
-        sendInput(socket);
-    });
+function onKeyDown (event) {
+    if((useArrowKeys && event.keyCode === 37)
+        || (useWASD && event.keyCode === 65)) { // left
+        keyInput['l'] = true;
+    } else if ((useArrowKeys && event.keyCode === 38)
+        || (useWASD && event.keyCode === 87)) { // up
+        keyInput['u'] = true;
+    } else if((useArrowKeys && event.keyCode === 39)
+        || (useWASD && event.keyCode === 68)) { // right
+        keyInput['r'] = true;
+    } else if ((useArrowKeys && event.keyCode === 40)
+        || (useWASD && event.keyCode === 83)) { // down
+        keyInput['d'] = true;
+    } else if (event.keyCode === 32) {
+        keyInput['s'] = true;
+    }
+    sendInput(socket);
+}
 
+function onKeyUp (event) {
+    if((useArrowKeys && event.keyCode === 37)
+        || (useWASD && event.keyCode === 65)) { // left
+        keyInput['l'] = false;
+    } else if ((useArrowKeys && event.keyCode === 38)
+        || (useWASD && event.keyCode === 87)) { // up
+        keyInput['u'] = false;
+    } else if((useArrowKeys && event.keyCode === 39)
+        || (useWASD && event.keyCode === 68)) { // right
+        keyInput['r'] = false;
+    } else if ((useArrowKeys && event.keyCode === 40)
+        || (useWASD && event.keyCode === 83)) { // down
+        keyInput['d'] = false;
+    } else if (event.keyCode === 32) {
+        keyInput['s'] = false;
+    }
+    sendInput(socket);
+}
+
+function registerKeyListeners() {
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
 }

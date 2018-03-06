@@ -26,7 +26,6 @@ function GameWorld (playerHandler, gameTimeLimit) {
     this.worldHeight = 2000;
 
     this.flytrapsPerSecond = gameConfigHandler.flytrapRate;
-    console.log(this.flytrapsPerSecond);
 
     this.playerHandler = playerHandler;
     this.players = playerHandler.players;
