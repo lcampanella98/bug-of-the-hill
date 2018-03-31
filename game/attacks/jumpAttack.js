@@ -47,11 +47,11 @@ JumpAttack.prototype.attack = function () {
     }
 };
 
-JumpAction.prototype.shouldProcessInput = function () {
+JumpAttack.prototype.shouldProcessInput = function () {
     return this.jump.shouldProcessInput();
 };
 
-JumpAction.prototype.shouldUpdateSprite = function () {
+JumpAttack.prototype.shouldUpdateSprite = function () {
     return this.jump.shouldUpdateSprite();
 };
 

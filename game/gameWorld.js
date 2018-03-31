@@ -156,6 +156,7 @@ GameWorld.prototype.updateWorld = function (dt) {
         // check collisions with other bugs
         let bug;
         for (let j = 0; j < this.players.length; ++j) {
+            if (p.getDamage() === undefined) continue;
             if (!this.players[j].hasLiveBug()) continue;
             bug = this.players[j].bug;
             if (p.collidedWithBug(bug)) { // check if projectile hit bug

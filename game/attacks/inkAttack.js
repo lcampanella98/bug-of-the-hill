@@ -1,6 +1,6 @@
 const Attack = require('./attackBase');
 const JumpAction = require('../actions/JumpAction');
-const Projectile = require('./projectile');
+const InkBlast = require('./inkBlast');
 
 const InkAttack = function (bug, maxRadius, damage, reloadTime, jumpSpeed, jumpDistance) {
     Attack.call(this, bug);
@@ -11,14 +11,8 @@ const InkAttack = function (bug, maxRadius, damage, reloadTime, jumpSpeed, jumpD
     this.damage = damage;
     this.rechargeTime = reloadTime;
     this.timeSinceLastAttack = reloadTime + 1;
-    this.INK_SPEED = 800;
-    this.INK_TIME_LASTING = 1000;
-    this.INK_BALL_PERIOD = 200;
-    this.NUM_INK_BALL_ROUNDS = Math.trunc(this.INK_TIME_LASTING / this.INK_BALL_PERIOD);
-    this.NUM_INK_BALLS_RADIAL = 10;
-    this.initialInkBallRadius = 20; // radius of largest ink balls that will be drawn on screen, in pixels
-    this.x0 = this.bug.x;
-    this.y0 = this.bug.y;
+
+    this.inkBlasts = [];
 
 };
 
@@ -31,20 +25,14 @@ InkAttack.prototype.update = function (dt) {
 
     this.jump.update(dt);
 
-    if (this.isInking) {
-        if (this.currentInkRadius < this.maxInkRadius) {
-            this.currentInkRadius += this.INK_SPEED / dt;
-            if (this.currentInkRadius > this.maxInkRadius) this.currentInkRadius = this.maxInkRadius;
-        }
+    for (let i = 0; i < this.inkBlasts.length; ++i) {
+        this.inkBlasts[i].update(dt);
+    }
 
-        if (this.numInkBallsLeft > 0) {
-            this.timeUntilNextInkBall -= dt;
-            if (this.timeUntilNextInkBall <= 0) {
-                this.fireInkBalls();
-                this.timeUntilNextInkBall = this.INK_BALL_PERIOD;
-                this.numInkBallsLeft--;
-            }
-        }
+    if (this.inkBlasts.length > 0) {
+        // remove inkblast if it is finished.
+        // need only check first one
+        if (!this.inkBlasts[0].isInking) this.inkBlasts.shift();
     }
 
 };
@@ -69,56 +57,11 @@ InkAttack.prototype.canAttack = function () {
     return !this.isRecharging();
 };
 
-InkAttack.prototype.fireInkBalls = function () {
-    let ballRadius = this.maxInkRadius * (this.numInkBallsLeft / this.NUM_INK_BALL_ROUNDS);
-    let deltaA = 2 * Math.PI / this.NUM_INK_BALLS_RADIAL;
-    let tFinal = this.maxInkRadius / this.INK_SPEED;
-    let angle = 0;
-    let drawProperties = {
-        radius: ballRadius,
-        fill: true,
-        fillColor: 'black'
-    };
-    for (let i = 0; i < this.NUM_INK_BALLS_RADIAL; ++i) {
-        let v = [this.INK_SPEED * Math.cos(angle), this.INK_SPEED * Math.sin(angle)];
-        this.bug.gameWorld.addProjectile(new Projectile([this.x0, this.y0], v, 0, tFinal, drawProperties, this.bug));
-        angle += deltaA;
-    }
-};
+InkAttack.prototype.inkBlast = function () {
+    let blast = new InkBlast(this.bug, this.maxInkRadius, this.damage);
+    blast.fireInk();
+    this.inkBlasts.push(blast);
 
-InkAttack.prototype.fireInk = function () {
-    this.isInking = true;
-    this.currentInkRadius = 0;
-    this.inkedPlayers = [];
-    this.timeUntilNextInkBall = 0;
-    this.numInkBallsLeft = this.NUM_INK_BALL_ROUNDS;
-
-};
-
-InkAttack.prototype.checkPlayerForInking = function (player) {
-    if (!player.hasLiveBug()) return;
-    const bug = player.bug;
-    if (bug === this.bug) return;
-    let playerAlreadyInked = false;
-    for (let i = 0; i < this.inkedPlayers.length; ++i) {
-        if (this.inkedPlayers[i] === player) {
-            playerAlreadyInked = true;
-            break;
-        }
-    }
-    if (!playerAlreadyInked) {
-        // ink the player if they are within the inking radius
-        let dist = this.getDistFromInkLocation(player);
-        if (dist <= this.currentInkRadius) { // they have been inked
-            bug.giveDamage(this.damage);
-            this.inkedPlayers.push(player);
-        }
-    }
-};
-
-InkAttack.prototype.getDistFromInkLocation = function (player) {
-    const bug = player.getBug();
-    return Math.hypot(this.x0 - bug.x, this.y0 - bug.y);
 };
 
 InkAttack.prototype.attack = function () {
@@ -127,7 +70,7 @@ InkAttack.prototype.attack = function () {
         this.jump.jump();
 
         // start inking
-        this.fireInk();
+        this.inkBlast();
         this.timeSinceLastAttack = 0;
     }
 };
