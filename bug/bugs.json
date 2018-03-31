@@ -24,6 +24,13 @@
     },
     {
       "type": "wasp"
+    },
+    {
+      "type": "cuttlefish",
+      "speed": 300,
+      "health": 200,
+      "damage": 100,
+      "reloadTime": 1200
     }
   ]
 }

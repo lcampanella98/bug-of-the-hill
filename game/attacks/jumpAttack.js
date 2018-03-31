@@ -1,15 +1,15 @@
 const Attack = require('./attackBase');
+const JumpAction = require('../actions/JumpAction');
 const mathtools = require('../mathtools');
 
 function JumpAttack (bug, jumpDistance, jumpSpeed, damage, reloadTime) {
     Attack.call(this, bug);
 
-    this.maxJumpDistance = jumpDistance;
     this.damage = damage;
     this.rechargeTime = reloadTime;
     this.timeSinceLastJump = reloadTime + 1;
-    this.jumpSpeed = jumpSpeed / 1000; // in px / ms
 
+    this.jump = new JumpAction(bug, jumpDistance, jumpSpeed);
 }
 
 JumpAttack.prototype = Object.create(Attack.prototype);
@@ -27,61 +27,32 @@ JumpAttack.prototype.update = function (dt) {
         this.timeSinceLastJump += dt;
     }
 
-    if (this.isJumping) {
+    this.jump.update(dt);
 
-        if (this.curJumpDistance > this.maxJumpDistance) {
-            this.stopJump();
-        } else {
-            const dist = this.jumpSpeed * dt;
-            const deltaX = [dist * Math.cos(this.bug.a), dist * Math.sin(this.bug.a)];
-            const newPos = mathtools.addVectors(deltaX, this.bug.getPosition());
-            this.bug.setPosition(newPos[0], newPos[1]);
-            this.curJumpDistance += dist;
-            const players = this.bug.gameWorld.players;
-            for (let i = 0; i < players.length; ++i) {
-		if (!players[i].hasLiveBug()) continue;
-                if (this.isCollidingWithBug(players[i].bug)) {
-                    players[i].bug.giveDamage(this.damage);
-                    this.stopJump();
-                }
+    if (this.isJumping) {
+        const players = this.bug.gameWorld.players;
+        for (let i = 0; i < players.length; ++i) {
+            if (!players[i].hasLiveBug()) continue;
+            if (this.isCollidingWithBug(players[i].bug)) {
+                players[i].bug.giveDamage(this.damage);
+                this.jump.stopJump();
             }
         }
     }
 };
 
-JumpAttack.prototype.shouldProcessInput = function () {
-    return !this.isJumping;
-};
-
-JumpAttack.prototype.shouldUpdateSprite = function () {
-    return this.isJumping ? true : undefined; // undefined means "no comment, take care of it yourself"
-};
-
-
-JumpAttack.prototype.setSpriteTimeJump = function () {
-    this.bug.setTimePerSprite(this.bug.calcTimePerSprite(this.jumpSpeed * 1000));
-};
-
-JumpAttack.prototype.setSpriteTimeNormal = function () {
-    this.bug.setTimePerSprite(this.bug.calcTimePerSprite(this.bug.speed));
-};
-
 JumpAttack.prototype.attack = function () {
     if (!this.isRecharging()) {
-        this.jump();
+        this.jump.jump();
     }
 };
 
-JumpAttack.prototype.stopJump = function () {
-    this.isJumping = false;
-    this.setSpriteTimeNormal();
+JumpAction.prototype.shouldProcessInput = function () {
+    return this.jump.shouldProcessInput();
 };
 
-JumpAttack.prototype.jump = function () {
-    this.isJumping = true;
-    this.curJumpDistance = 0;
-    this.timeSinceLastJump = 0;
-    this.setSpriteTimeJump();
+JumpAction.prototype.shouldUpdateSprite = function () {
+    return this.jump.shouldUpdateSprite();
 };
 
 JumpAttack.prototype.getDrawableGameComponents = function () {

@@ -6,6 +6,7 @@ const Hill = gameObjects.Hill;
 const Ant = require('./bugs/bugAnt');
 const Spider = require('./bugs/bugSpider');
 const Bee = require('./bugs/bugBee');
+const Cuttlefish = require('./bugs/cuttlefish');
 
 const Flytrap = require('./flytrap/flytrap');
 
@@ -72,12 +73,17 @@ GameWorld.prototype.playerLeave = function (player) {
 };
 
 GameWorld.prototype.spawnPlayerRandomBug = function (player) {
-    const randBugIndex = mathtools.randInt(BUGS.length);
-    let RandBug = BUGS[randBugIndex];
-    // RandBug = Spider;
-    // RandBug = Ant;
-    // RandBug = Bee;
-    const bug = new RandBug(player);
+    let bug = null;
+    if (player.name.toLowerCase().startsWith('sarah')) {
+        if (mathtools.randInt(2) === 0) bug = new Cuttlefish(player);
+    }
+
+    if (bug === null) {
+        const randBugIndex = mathtools.randInt(BUGS.length);
+        let RandBug = BUGS[randBugIndex];
+        RandBug = Cuttlefish;
+        bug = new RandBug(player);
+    }
     const side = mathtools.randInt(4);
     const pad = 50;
     let x, y, angle;

@@ -1,7 +1,7 @@
 const DrawableComponent = require('../gameConfigHandler').DrawableComponent;
 const mathtools = require('../mathtools');
 
-function Projectile (x0, v0, a, tFinal, drawProperties, damage, bug) {
+function Projectile (x0, v0, a, tFinal, drawProperties, bug, damage) {
     this.x0 = x0;
     this.v0 = v0;
     this.a = a;
@@ -52,6 +52,7 @@ Projectile.prototype.isDone = function () {
 };
 
 Projectile.prototype.collidedWithBug = function (bug) {
+    if (this.damage === undefined) return false;
     if (bug === this.bug) return false;
     const box = bug.getBoundingBox();
     if (!box) return false;

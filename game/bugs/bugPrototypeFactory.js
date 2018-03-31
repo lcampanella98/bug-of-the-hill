@@ -1,6 +1,7 @@
 const Spider = require('./bugSpider');
 const Ant = require('./bugAnt');
 const Bee = require('./bugBee');
+const Cuttlefish = require('./cuttlefish');
 
 module.exports = {
     addToBugPrototype: function (bugTypeName, props) {
@@ -12,6 +13,8 @@ module.exports = {
             obj = Spider;
         } else if (bugTypeName === 'bee') {
             obj = Bee;
+        } else if (bugTypeName === 'cuttlefish') {
+            obj = Cuttlefish
         }
         if (obj === null) return;
 
@@ -23,6 +26,7 @@ module.exports = {
         bugTypeName = bugTypeName.toLowerCase();
         return bugTypeName === 'ant'
             || bugTypeName === 'spider'
-            || bugTypeName === 'bee';
+            || bugTypeName === 'bee'
+            || bugTypeName === 'cuttlefish';
     }
 };

@@ -57,7 +57,7 @@ ProjectileAttack.prototype.fireProjectile = function (x0, angleTrajectoryRadians
         tFinal = (Math.sqrt(normV0Squared * normV0Squared + 2 * this.magAcceleration * this.maxTravelDistance) - normV0Squared) / (2 * this.magAcceleration);
     }
     // console.log(x0, v0, a, tFinal);
-    this.bug.gameWorld.addProjectile(new Projectile(x0, v0, a, tFinal, this.drawProperties, this.damage, this.bug));
+    this.bug.gameWorld.addProjectile(new Projectile(x0, v0, a, tFinal, this.drawProperties, this.bug, this.damage));
 
     this.timeSinceLastFire = 0;
 };
