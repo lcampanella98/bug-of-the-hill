@@ -30,7 +30,6 @@ JumpAction.prototype.stopJump = function () {
 JumpAction.prototype.jump = function () {
     this.isJumping = true;
     this.curJumpDistance = 0;
-    this.timeSinceLastJump = 0;
     this.setSpriteTimeJump();
 };
 

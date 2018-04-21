@@ -26,6 +26,8 @@ function BugBase (player) {
     this.health = this.maxHealth;
     this.angularSpeed = 2;
 
+    this.setPosition(0,0);
+
     this.input = player.getDefaultInputObj();
     this.setAttack(this.getDefaultAttack());
 }
@@ -153,6 +155,7 @@ BugBase.prototype.getPosition = function () {
 BugBase.prototype.setPosition = function (x, y) {
     this.x = x;
     this.y = y;
+    this.updateBoundingBox();
 };
 
 BugBase.prototype.setAngle = function (a) {

@@ -19,7 +19,7 @@ JumpAttack.prototype.isRecharging = function () {
 };
 
 JumpAttack.prototype.canAttack = function () {
-    return !this.isRecharging()
+    return !this.isRecharging();
 };
 
 JumpAttack.prototype.update = function (dt) {
@@ -29,7 +29,7 @@ JumpAttack.prototype.update = function (dt) {
 
     this.jump.update(dt);
 
-    if (this.isJumping) {
+    if (this.jump.isJumping) {
         const players = this.bug.gameWorld.players;
         for (let i = 0; i < players.length; ++i) {
             if (!players[i].hasLiveBug()) continue;
@@ -44,6 +44,7 @@ JumpAttack.prototype.update = function (dt) {
 JumpAttack.prototype.attack = function () {
     if (!this.isRecharging()) {
         this.jump.jump();
+        this.timeSinceLastJump = 0;
     }
 };
 

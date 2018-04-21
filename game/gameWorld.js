@@ -81,7 +81,6 @@ GameWorld.prototype.spawnPlayerRandomBug = function (player) {
     if (bug === null) {
         const randBugIndex = mathtools.randInt(BUGS.length);
         let RandBug = BUGS[randBugIndex];
-
         bug = new RandBug(player);
     }
     const side = mathtools.randInt(4);
